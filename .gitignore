@@ -1,0 +1,15 @@
+# Xcode / build
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+
+# SwiftPM (if added later)
+.swiftpm/
+Packages/
+Package.resolved
+
+# Secrets
+.env
+*.pem

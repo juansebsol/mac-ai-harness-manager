@@ -27,8 +27,8 @@ struct AppSettings: Codable, Hashable, Sendable {
     var refreshAutomatically: Bool = false
     var refreshIntervalSeconds: Int = 60
     var preferredTerminal: PreferredTerminal = .automatic
-    /// Off by default — MenuBarExtra has caused launch freezes on some machines.
-    var showMenuBarExtra: Bool = false
+    /// Native AppKit status item; existing user preferences are preserved.
+    var showMenuBarExtra: Bool = true
     var projectRoots: [String] = ["~/Developer", "~/Projects"]
     var additionalBinaryPaths: [String] = []
     var additionalConfigDirectories: [String] = []

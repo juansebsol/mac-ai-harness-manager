@@ -141,7 +141,7 @@ actor PackageManagerService {
         else { return [] }
 
         do {
-            let result = try await CommandRunner.shared.run(executable: brew, arguments: ["list", "--formula"], timeout: 12)
+            let result = try await CommandRunner.shared.run(executable: brew, arguments: ["list", "-1"], environment: ["PATH": path], timeout: 12)
             return result.stdout
                 .split(whereSeparator: \.isNewline)
                 .map { String($0).trimmingCharacters(in: .whitespaces) }
@@ -158,6 +158,7 @@ actor PackageManagerService {
             let result = try await CommandRunner.shared.run(
                 executable: npm,
                 arguments: ["list", "-g", "--depth=0", "--json"],
+                environment: ["PATH": path],
                 timeout: 25
             )
             return parseNpmStylePackageNames(from: result.stdout)
@@ -172,6 +173,7 @@ actor PackageManagerService {
             let result = try await CommandRunner.shared.run(
                 executable: pnpm,
                 arguments: ["list", "-g", "--depth", "0", "--json"],
+                environment: ["PATH": path],
                 timeout: 25
             )
             return parsePnpmPackageNames(from: result.stdout)
@@ -187,6 +189,7 @@ actor PackageManagerService {
             let result = try await CommandRunner.shared.run(
                 executable: bun,
                 arguments: ["pm", "ls", "-g"],
+                environment: ["PATH": path],
                 timeout: 20
             )
             return result.stdout
@@ -195,8 +198,9 @@ actor PackageManagerService {
                 .compactMap { line -> String? in
                     let parts = line.split(separator: " ")
                     guard let last = parts.last else { return nil }
-                    let name = String(last).split(separator: "@").first.map(String.init) ?? String(last)
-                    return name.isEmpty ? nil : name
+                    let token = String(last)
+                    guard let versionSeparator = token.lastIndex(of: "@"), versionSeparator != token.startIndex else { return nil }
+                    return String(token[..<versionSeparator])
                 }
         } catch {
             return []
@@ -214,9 +218,8 @@ actor PackageManagerService {
     private func parsePnpmPackageNames(from json: String) -> [String] {
         guard let data = json.data(using: .utf8) else { return [] }
         if let arr = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-            return arr.compactMap { item in
-                if let name = item["name"] as? String { return name }
-                return nil
+            return arr.flatMap { item in
+                Array((item["dependencies"] as? [String: Any] ?? [:]).keys)
             }
         }
         if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],

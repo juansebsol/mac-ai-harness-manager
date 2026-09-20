@@ -42,6 +42,14 @@ struct HarnessDetailView: View {
                     .font(.title2.weight(.semibold))
                 Spacer()
                 StatusBadge(status: snapshot.status)
+                Button {
+                    appState.closeInspector()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Close")
             }
             if let website = definition?.website {
                 Link(website.host ?? website.absoluteString, destination: website)

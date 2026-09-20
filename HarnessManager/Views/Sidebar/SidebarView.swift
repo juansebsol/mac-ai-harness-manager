@@ -34,8 +34,27 @@ struct SidebarView: View {
             }
         }
         .listStyle(.sidebar)
+        .safeAreaInset(edge: .top) {
+            HStack(spacing: 9) {
+                Image("HarnessBrand").resizable().scaledToFit().frame(width: 34, height: 34)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Harness Manager").font(.caption.weight(.semibold))
+                    Text("Your AI workspace").font(.caption2).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }.padding(.horizontal, 12).padding(.vertical, 10)
+        }
         .safeAreaInset(edge: .bottom) {
-            if appState.isScanning || appState.isEnriching {
+            if !appState.isScanning && !appState.isEnriching {
+                HStack(spacing: 8) {
+                    Image(systemName: "desktopcomputer").foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("This Mac").font(.caption.weight(.medium))
+                        Text("\(appState.summary.installed) tools installed").font(.caption2).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                }.padding(14)
+            } else {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)

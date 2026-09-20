@@ -5,7 +5,7 @@ import Observation
 import SwiftUI
 
 enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-    case allHarnesses, running, problems, store
+    case allHarnesses, running, problems, store, news
     case providers, mcpServers, skills
     case processes
     case settings, about
@@ -17,7 +17,8 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         case .allHarnesses: return "All Harnesses"
         case .running: return "Running"
         case .problems: return "Problems"
-        case .store: return "Store"
+        case .store: return "Discover"
+        case .news: return "Harness news"
         case .providers: return "Providers"
         case .mcpServers: return "MCP Servers"
         case .skills: return "Skills"
@@ -33,6 +34,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         case .running: return "play.circle"
         case .problems: return "exclamationmark.triangle"
         case .store: return "bag"
+        case .news: return "newspaper"
         case .providers: return "key"
         case .mcpServers: return "server.rack"
         case .skills: return "books.vertical"
@@ -42,7 +44,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         }
     }
 
-    static let harnesses: [SidebarItem] = [.allHarnesses, .running, .problems, .store]
+    static let harnesses: [SidebarItem] = [.allHarnesses, .running, .problems, .store, .news]
     static let infrastructure: [SidebarItem] = [.providers, .mcpServers, .skills]
     static let system: [SidebarItem] = [.processes]
     static let bottom: [SidebarItem] = [.settings, .about]
@@ -84,6 +86,7 @@ final class AppState {
     var searchText = ""
     var harnessFilter: HarnessFilter = .all
 
+    var actionError: String?
     var updateConfirmation: UpdateConfirmation?
     var executionSheet: ExecutionSheetState?
     var diagnosticsSheet: DiagnosticsSheetState?
@@ -193,6 +196,20 @@ final class AppState {
         return harnesses.first { $0.definitionId == selectedHarnessId }
     }
 
+    /// Inspector card is open only while a harness is selected.
+    var isInspectorPresented: Bool {
+        selectedHarnessId != nil
+            && [.allHarnesses, .running, .problems, .store].contains(selectedSidebar)
+    }
+
+    func openInspector(for harnessId: String) {
+        selectedHarnessId = harnessId
+    }
+
+    func closeInspector() {
+        selectedHarnessId = nil
+    }
+
     var runningMenuItems: [(name: String, project: String)] {
         processes.compactMap { process in
             guard let name = process.harnessName else { return nil }
@@ -258,7 +275,7 @@ final class AppState {
 
     /// Instant UI scan (filesystem only), then optional background enrichment with a hard deadline.
     func beginRefresh(checkUpdates: Bool) {
-        guard !isScanning else { return }
+        guard !isScanning && !isEnriching else { return }
         isScanning = true
         scanMessage = "Scanning your Mac for AI developer tools…"
         let settings = settingsStore.settings
@@ -346,16 +363,23 @@ final class AppState {
     }
 
     func checkForUpdates() async {
+        guard !isCheckingUpdates else { return }
         isCheckingUpdates = true
         defer { isCheckingUpdates = false }
         let path = await PathEnvironmentService.shared.fastPATH(
             additionalPaths: settingsStore.settings.additionalBinaryPaths
         )
-        harnesses = await UpdateCheckService.shared.checkUpdates(
+        let checked = await UpdateCheckService.shared.checkUpdates(
             snapshots: harnesses,
             pathEnvironment: path,
             force: true
         )
+        for update in checked {
+            if let index = harnesses.firstIndex(where: { $0.definitionId == update.definitionId && $0.installedVersion == update.installedVersion && $0.installSource == update.installSource }) {
+                harnesses[index].latestVersion = update.latestVersion
+                harnesses[index].updateStatus = update.updateStatus
+            }
+        }
         for i in harnesses.indices {
             if harnesses[i].updateStatus == .updateAvailable, harnesses[i].status == .installed {
                 harnesses[i].status = .updateAvailable
@@ -372,7 +396,10 @@ final class AppState {
             definition: definition,
             installSource: snapshot.installSource,
             pathEnvironment: path
-        ) else { return }
+        ) else {
+            actionError = "No supported command is available for this installation. Open the harness website or use its built-in updater, then rescan."
+            return
+        }
 
         updateConfirmation = UpdateConfirmation(
             kind: .update,
@@ -395,7 +422,10 @@ final class AppState {
             definition: definition,
             packageManagers: packageManagers,
             pathEnvironment: path
-        ) else { return }
+        ) else {
+            actionError = "No supported command is available for this installation. Open the harness website or use its built-in updater, then rescan."
+            return
+        }
 
         updateConfirmation = UpdateConfirmation(
             kind: .install,
@@ -417,21 +447,24 @@ final class AppState {
 
         Task {
             do {
+                let path = await PathEnvironmentService.shared.fastPATH(additionalPaths: settingsStore.settings.additionalBinaryPaths)
                 let result = try await CommandRunner.shared.run(
                     executable: executable,
                     arguments: arguments,
+                    environment: ["PATH": path],
                     timeout: 600
                 )
                 await MainActor.run {
                     guard var sheet = self.executionSheet else { return }
                     sheet.isRunning = false
                     sheet.exitCode = result.exitCode
-                    sheet.output = result.stdout.isEmpty ? result.stderr : result.stdout
+                    sheet.output = [result.stdout, result.stderr].filter { !$0.isEmpty }.joined(separator: "\n")
                     sheet.output.append(result.succeeded
                         ? "\n\nCompleted successfully (exit \(result.exitCode))."
                         : "\n\nFailed (exit \(result.exitCode)).")
                     self.executionSheet = sheet
                 }
+                await DiscoveryCache.shared.reset()
                 await fullRefresh(checkUpdates: true)
             } catch {
                 await MainActor.run {
@@ -470,8 +503,8 @@ final class AppState {
     func openHarness(_ snapshot: HarnessSnapshot) {
         if let app = snapshot.applicationPath {
             NSWorkspace.shared.open(URL(fileURLWithPath: app))
-        } else if let binary = snapshot.binaryPath {
-            revealPath(binary)
+        } else if snapshot.binaryPath != nil {
+            projectPickerHarness = snapshot
         }
     }
 

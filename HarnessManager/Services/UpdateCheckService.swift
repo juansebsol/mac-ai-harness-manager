@@ -39,7 +39,7 @@ actor UpdateCheckService {
                 if copy.status == .installed || copy.status == .running {
                     // Preserve running; mark update in updateStatus field.
                 }
-            } else if latest != nil {
+            } else if latest != nil && normalizeVersion(snapshot.installedVersion) != nil {
                 copy.updateStatus = .current
             } else {
                 copy.updateStatus = .unknown
@@ -97,7 +97,11 @@ actor UpdateCheckService {
             else { return nil }
             return (bun, ["add", "-g", "\(package)@latest"], "bun add -g \(package)@latest")
 
-        case .macApplication, .standalone, .unknown:
+        case .standalone:
+            guard definition.id == "claude-code",
+                  let binary = CommandRunner.resolveExecutable(named: "claude", pathEnvironment: pathEnvironment) else { return nil }
+            return (binary, ["update"], "claude update")
+        case .macApplication, .unknown:
             return nil
         }
     }
@@ -163,9 +167,11 @@ actor UpdateCheckService {
         switch installSource {
         case .homebrew:
             version = await brewLatest(definition: definition, path: pathEnvironment)
-        case .npm:
+        case .npm, .pnpm, .bun:
             version = await npmLatest(definition: definition, path: pathEnvironment)
-        case .pnpm, .bun, .macApplication, .standalone, .unknown:
+        case .standalone:
+            version = definition.id == "claude-code" ? await npmLatest(definition: definition, path: pathEnvironment) : nil
+        case .macApplication, .unknown:
             version = nil
         }
 
@@ -183,46 +189,35 @@ actor UpdateCheckService {
                 .first(where: { FileManager.default.isExecutableFile(atPath: $0.path) })
         else { return nil }
 
-        // Prefer outdated list (local, cheap) then info
         do {
-            let outdated = try await CommandRunner.shared.run(
-                executable: brew,
-                arguments: ["outdated", "--formula", "--verbose"],
-                timeout: 20
+            let result = try await CommandRunner.shared.run(
+                executable: brew, arguments: ["info", "--json=v2", formula],
+                environment: ["PATH": path], timeout: 25
             )
-            for line in outdated.stdout.split(whereSeparator: \.isNewline) {
-                let parts = line.split(whereSeparator: { $0.isWhitespace })
-                guard let name = parts.first.map(String.init), name == formula else { continue }
-                // typical: formula (1.0.0) < 1.1.0
-                if let last = parts.last.map(String.init) {
-                    return last.trimmingCharacters(in: CharacterSet(charactersIn: "<>"))
-                }
-            }
-        } catch {
-            logger.debug("brew outdated failed")
-        }
-        return nil
+            guard result.succeeded,
+                  let data = result.stdout.data(using: .utf8),
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+            if let formula = (json["formulae"] as? [[String: Any]])?.first,
+               let versions = formula["versions"] as? [String: Any] { return versions["stable"] as? String }
+            return (json["casks"] as? [[String: Any]])?.first?["version"] as? String
+        } catch { return nil }
     }
 
     private func npmLatest(definition: HarnessDefinition, path: String) async -> String? {
         guard let package = definition.installationMethods.compactMap({ method -> String? in
-            if case .npm(let p) = method { return p }
-            return nil
-        }).first,
-              let npm = CommandRunner.resolveExecutable(named: "npm", pathEnvironment: path)
-        else { return nil }
-
+            switch method {
+            case .npm(let p), .pnpm(let p), .bun(let p): return p
+            default: return nil
+            }
+        }).first else { return nil }
         do {
-            let result = try await CommandRunner.shared.run(
-                executable: npm,
-                arguments: ["view", package, "version"],
-                timeout: 20
-            )
-            let version = result.stdout.trimmingCharacters(in: .whitespacesAndNewlines)
-            return version.isEmpty ? nil : version
-        } catch {
-            return nil
-        }
+            let escaped = package.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/")))!
+            let url = URL(string: "https://registry.npmjs.org/\(escaped)/latest")!
+            let (data, response) = try await URLSession.shared.data(for: URLRequest(url: url, timeoutInterval: 20))
+            guard (response as? HTTPURLResponse)?.statusCode == 200,
+                  let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+            return object["version"] as? String
+        } catch { return nil }
     }
 
     private func normalizeVersion(_ raw: String?) -> String? {

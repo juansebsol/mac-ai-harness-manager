@@ -44,24 +44,27 @@ struct HarnessesListView: View {
 
     private var summaryBar: some View {
         let s = appState.summary
-        return HStack(spacing: 20) {
-            SummaryChip(title: "Installed", value: s.installed)
-            SummaryChip(title: "Running", value: s.running)
-            SummaryChip(title: "Updates", value: s.updates)
-            SummaryChip(title: "Issues", value: s.issues)
-            Spacer()
-            if let last = appState.lastRefresh {
-                Text("Updated \(last.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.tertiary)
+        return VStack(alignment: .leading, spacing: 20) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 5) {
+                    Text("Your AI workspace").font(.system(size: 28, weight: .bold))
+                    Text("Manage your tools. Keep your environment ready.").font(.callout).foregroundStyle(.secondary)
+                }
+                Spacer()
+                if appState.isCheckingUpdates { ProgressView().controlSize(.small) }
             }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+            HStack(spacing: 28) {
+                SummaryChip(title: "Installed", value: s.installed)
+                SummaryChip(title: "Running", value: s.running)
+                SummaryChip(title: "Updates", value: s.updates)
+                SummaryChip(title: "Issues", value: s.issues)
+                Spacer()
+            }
+        }.padding(24)
     }
 
     private var filterBar: some View {
-        HStack(spacing: 8) {
+        ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 8) {
             ForEach(HarnessFilter.allCases) { filter in
                 FilterChip(
                     title: filter.title,
@@ -73,16 +76,15 @@ struct HarnessesListView: View {
             Spacer()
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, 12)
+        }
     }
 
     private var table: some View {
-        Table(appState.filteredHarnesses, selection: Bindable(appState).selectedHarnessId, sortOrder: $sortOrder) {
+        Table(appState.filteredHarnesses.sorted(using: sortOrder), selection: Bindable(appState).selectedHarnessId, sortOrder: $sortOrder) {
             TableColumn("Harness", value: \.name) { item in
                 HStack(spacing: 8) {
-                    Image(systemName: HarnessRegistry.definition(for: item.definitionId)?.iconName ?? "app")
-                        .foregroundStyle(.secondary)
-                        .frame(width: 16)
+                    HarnessLogoView(snapshot: item, size: 24)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(item.name)
                         if item.definitionIncomplete {
@@ -106,26 +108,6 @@ struct HarnessesListView: View {
                     .foregroundStyle(.secondary)
             }
             .width(min: 70, ideal: 90)
-
-            TableColumn("Install Method", value: \.displayInstallMethod) { item in
-                Text(item.displayInstallMethod)
-                    .foregroundStyle(.secondary)
-            }
-            .width(min: 80, ideal: 100)
-
-            TableColumn("Provider", value: \.displayProvider) { item in
-                Text(item.displayProvider)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .width(min: 80, ideal: 110)
-
-            TableColumn("Active Project", value: \.displayActiveProject) { item in
-                Text(item.displayActiveProject)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            .width(min: 90, ideal: 120)
 
             TableColumn("Update", value: \.updateStatus.displayName) { item in
                 Text(item.updateStatus.displayName)
@@ -184,9 +166,9 @@ struct HarnessesListView: View {
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No AI coding harnesses detected", systemImage: "magnifyingglass")
+            Label("No matching harnesses", systemImage: "magnifyingglass")
         } description: {
-            Text("Try rescanning, or browse the supported harness list.")
+            Text("Clear your filters or discover tools to add to your workspace.")
         } actions: {
             Button("Rescan") {
                 Task { await appState.fullRefresh(checkUpdates: false) }
@@ -206,16 +188,11 @@ struct SummaryChip: View {
     let value: Int
 
     var body: some View {
-        HStack(spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("\(value)")
-                .font(.caption.weight(.semibold).monospacedDigit())
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 4))
+        VStack(alignment: .leading, spacing: 4) {
+            Text("\(value)").font(.system(size: 26, weight: .semibold, design: .rounded).monospacedDigit())
+            Text(title).font(.caption).foregroundStyle(.secondary)
+        }.frame(minWidth: 70, alignment: .leading)
+
     }
 }
 

@@ -16,6 +16,8 @@ enum ClaudeCodeDefinition {
         versionArguments: ["--version"],
         installationMethods: [
             .npm(package: "@anthropic-ai/claude-code"),
+            .pnpm(package: "@anthropic-ai/claude-code"),
+            .bun(package: "@anthropic-ai/claude-code"),
             .homebrew(formula: "claude-code"),
             .standalone
         ],
@@ -40,6 +42,8 @@ enum CodexDefinition {
         versionArguments: ["--version"],
         installationMethods: [
             .npm(package: "@openai/codex"),
+            .pnpm(package: "@openai/codex"),
+            .bun(package: "@openai/codex"),
             .homebrew(formula: "codex"),
             .standalone
         ],
@@ -63,6 +67,8 @@ enum GeminiCLIDefinition {
         versionArguments: ["--version"],
         installationMethods: [
             .npm(package: "@google/gemini-cli"),
+            .pnpm(package: "@google/gemini-cli"),
+            .bun(package: "@google/gemini-cli"),
             .homebrew(formula: "gemini-cli"),
             .standalone
         ],
@@ -87,6 +93,8 @@ enum OpenCodeDefinition {
         installationMethods: [
             .homebrew(formula: "opencode"),
             .npm(package: "opencode-ai"),
+            .pnpm(package: "opencode-ai"),
+            .bun(package: "opencode-ai"),
             .standalone
         ],
         providerIds: ["openrouter", "openai", "anthropic"],
@@ -110,6 +118,7 @@ enum CursorDefinition {
         ],
         versionArguments: ["--version"],
         installationMethods: [
+            .homebrew(formula: "cursor"),
             .macApplication,
             .standalone
         ],

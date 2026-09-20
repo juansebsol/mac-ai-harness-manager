@@ -6,6 +6,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+ BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBBBBBB2222222222222222; };
+ AAAAAAAA1111111111111111 /* HarnessNewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAA2222222222222222; };
 		ABF5C38B1ADB49E685B1033B /* StoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDCE8716C6F4CCFB396AC83 /* StoreView.swift */; };
 		1E69E7E3C35444048400788B /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBCBEFE68ED4953AC15283E /* AppState.swift */; };
 		D80BEC8FF80042FFB71D5A2D /* HarnessManagerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF9A9B01459A4C6D884CFE29 /* HarnessManagerApp.swift */; };
@@ -50,6 +52,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+ BBBBBBBB2222222222222222 /* HarnessLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessLogoView.swift; sourceTree = "<group>"; };
+ AAAAAAAA2222222222222222 /* HarnessNewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessNewsView.swift; sourceTree = "<group>"; };
 		7DDCE8716C6F4CCFB396AC83 /* StoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreView.swift; sourceTree = "<group>"; };
 		0D9F02B5D0B04FB79EE70AB7 /* Harness Manager.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Harness Manager.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFBCBEFE68ED4953AC15283E /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -280,6 +284,8 @@
 			isa = PBXGroup;
 			children = (
 				A44A9BB26FFA48BC81E94FEB /* RootView.swift */,
+ BBBBBBBB2222222222222222 /* HarnessLogoView.swift */,
+ AAAAAAAA2222222222222222 /* HarnessNewsView.swift */,
 				F89CA6C37580418D94A4BC6C /* Sheets.swift */,
 			);
 			path = Shared;
@@ -403,6 +409,8 @@
 				A7193A24A06D4B9B85D5ABE3 /* ProvidersView.swift in Sources */,
 				10A9D33C179E48EE89CEAE50 /* SettingsView.swift in Sources */,
 				65383E50CD3F4E88ABC86FF2 /* RootView.swift in Sources */,
+ BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */,
+ AAAAAAAA1111111111111111 /* HarnessNewsView.swift in Sources */,
 				B76A8562E0A7412598E99344 /* Sheets.swift in Sources */,
 				F112A828370D4DC1B0AF5382 /* SidebarView.swift in Sources */,
 			);
@@ -446,7 +454,7 @@
 		54194370FB024E9593ACCA53 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HarnessManager/Resources/HarnessManager.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -471,7 +479,7 @@
 		47B8E26BA0F345C2953EB67C /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = HarnessManager/Resources/HarnessManager.entitlements;
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;

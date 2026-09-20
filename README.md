@@ -55,3 +55,11 @@ Discovery is **local and read-only**. Mutating actions (updates, terminate) requ
 ```
 
 This builds Release, launches the app, asserts it stays alive, confirms the main thread is idle, and checks CPU settles near 0% (guards against the SwiftUI main-menu invalidation beach-ball).
+
+## Workspace and release feeds
+
+Discover prioritizes supported tools; enable “Include tools with limited support” to see incomplete catalog entries. Harness news fetches stable releases from the official Claude Code, Codex, and Gemini CLI GitHub repositories, with search, source filters, and retry feedback. GitHub rate limits and network failures are shown inline.
+
+Install/update commands use the discovered PATH. Supported npm tools can use npm, pnpm, or Bun; Homebrew inventory includes casks. Native Claude Code supports `claude update`. Apps installed outside a supported package manager use their own updater or vendor website. Harness Manager itself does not yet have a signed self-update distribution service.
+
+Run `./Scripts/test-workflows.sh` for isolated command workflow checks. These use temporary fake package managers and do not install or update real tools.

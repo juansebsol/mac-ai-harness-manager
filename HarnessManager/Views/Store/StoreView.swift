@@ -3,6 +3,7 @@ import SwiftUI
 struct StoreView: View {
     @Environment(AppState.self) private var appState
     @State private var searchText = ""
+    @State private var includePreviews = false
     @State private var segment: StoreSegment = .all
 
     enum StoreSegment: String, CaseIterable, Identifiable {
@@ -23,7 +24,7 @@ struct StoreView: View {
     }
 
     private var items: [HarnessSnapshot] {
-        var list = appState.harnesses
+        var list = appState.harnesses.filter { includePreviews || !$0.definitionIncomplete || $0.isInstalled }
         switch segment {
         case .all: break
         case .notInstalled: list = list.filter { !$0.isInstalled }
@@ -48,6 +49,7 @@ struct StoreView: View {
     }
 
     private func rank(_ item: HarnessSnapshot) -> Int {
+        if item.definitionIncomplete { return 3 }
         if item.updateStatus == .updateAvailable { return 0 }
         if !item.isInstalled { return 1 }
         return 2
@@ -75,7 +77,7 @@ struct StoreView: View {
                 }
             }
         }
-        .navigationTitle("Store")
+        .navigationTitle("Discover")
         .searchable(text: $searchText, prompt: "Search harnesses")
         .toolbar {
             ToolbarItemGroup {
@@ -104,7 +106,8 @@ struct StoreView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Browse and install AI coding harnesses. Updates for installed tools appear here too.")
+            Text("Find your next tool").font(.system(size: 28, weight: .bold))
+            Text("Browse AI coding harnesses and keep installed tools up to date.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
 
@@ -115,10 +118,11 @@ struct StoreView: View {
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 420)
+            Toggle("Include tools with limited support", isOn: $includePreviews).font(.caption).toggleStyle(.checkbox)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
     }
 
     private var emptyTitle: String {
@@ -132,7 +136,7 @@ struct StoreView: View {
 
     private var emptyDescription: String {
         switch segment {
-        case .updates: return "Installed harnesses are up to date, or update checks haven’t run yet."
+        case .updates: return "No confirmed updates. Unknown versions and unsupported update sources still need a manual check."
         case .notInstalled: return "Every supported harness in the catalog appears to be installed."
         default: return "Try refreshing your machine scan."
         }
@@ -149,11 +153,7 @@ struct StoreRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            Image(systemName: definition?.iconName ?? "app")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-                .frame(width: 44, height: 44)
-                .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 10))
+            HarnessLogoView(snapshot: snapshot, size: 48)
 
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
@@ -168,7 +168,7 @@ struct StoreRow: View {
                             .foregroundStyle(.orange)
                     }
                     if snapshot.definitionIncomplete {
-                        Text("Coming soon")
+                        Text("Limited support")
                             .font(.caption2)
                             .foregroundStyle(.tertiary)
                     }
@@ -190,8 +190,8 @@ struct StoreRow: View {
 
             actionButton
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
         .contentShape(Rectangle())
         .onTapGesture {
             appState.selectedHarnessId = snapshot.definitionId
@@ -230,7 +230,7 @@ struct StoreRow: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.small)
         } else if snapshot.isInstalled {
-            Button("Open") {
+            Button(snapshot.applicationPath == nil ? "Launch…" : "Open") {
                 appState.selectedSidebar = .allHarnesses
                 appState.selectedHarnessId = snapshot.definitionId
                 appState.openHarness(snapshot)
@@ -238,7 +238,7 @@ struct StoreRow: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
         } else if canInstall {
-            Button("Get") {
+            Button("Install…") {
                 Task { await appState.requestInstall(for: snapshot) }
             }
             .buttonStyle(.borderedProminent)

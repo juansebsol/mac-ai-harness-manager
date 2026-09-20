@@ -51,19 +51,9 @@ actor HarnessDiscoveryService {
     ) async -> [HarnessSnapshot] {
         let path = await PathEnvironmentService.shared.currentPATH(additionalPaths: settings.additionalBinaryPaths)
 
-        // Never block first paint on brew/npm listing — use cache or empty, refresh later.
-        let packageScan = await DiscoveryCache.shared.cachedPackageScan()
-            ?? DiscoveryCache.PackageManagerScan(
-                brewFormulas: [],
-                npmPackages: [],
-                pnpmPackages: [],
-                bunPackages: [],
-                scannedAt: .distantPast
-            )
-
-        Task {
-            _ = await PackageManagerService.shared.scanInstalledPackages(pathEnvironment: path, force: true)
-        }
+        // The fast pass already painted the UI. Enrichment needs a fresh inventory
+        // so the first scan and post-install refresh identify the owning manager.
+        let packageScan = await PackageManagerService.shared.scanInstalledPackages(pathEnvironment: path, force: true)
 
         let context = ScanContext(
             pathEnvironment: path,
@@ -106,10 +96,12 @@ actor HarnessDiscoveryService {
     func discoverOne(definition: HarnessDefinition, context: ScanContext) async -> HarnessSnapshot {
         var snapshot = discoverOneSync(definition: definition, context: context)
         if context.runVersionCommands, let binaryPath = snapshot.binaryPath {
-            snapshot.installedVersion = await readVersion(
+            let binaryVersion = await readVersion(
                 executable: URL(fileURLWithPath: binaryPath),
-                arguments: definition.versionArguments
+                arguments: definition.versionArguments,
+                path: context.pathEnvironment
             )
+            if let binaryVersion { snapshot.installedVersion = binaryVersion }
         }
         return snapshot
     }
@@ -134,7 +126,10 @@ actor HarnessDiscoveryService {
             definitionId: definition.id,
             name: definition.name,
             status: status,
-            installedVersion: nil,
+            installedVersion: appPath.flatMap { path in
+                guard let info = NSDictionary(contentsOfFile: path + "/Contents/Info.plist") else { return nil }
+                return info["CFBundleShortVersionString"] as? String ?? info["CFBundleVersion"] as? String
+            },
             latestVersion: nil,
             updateStatus: .unknown,
             installSource: resolvedSource,
@@ -245,13 +240,15 @@ actor HarnessDiscoveryService {
         return .unknown
     }
 
-    private func readVersion(executable: URL, arguments: [String]) async -> String? {
+    private func readVersion(executable: URL, arguments: [String], path: String) async -> String? {
         do {
             let result = try await CommandRunner.shared.run(
                 executable: executable,
                 arguments: arguments,
+                environment: ["PATH": path],
                 timeout: 4
             )
+            guard result.succeeded else { return nil }
             let text = (result.stdout.isEmpty ? result.stderr : result.stdout)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             guard !text.isEmpty else { return nil }

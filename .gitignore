@@ -13,3 +13,14 @@ Package.resolved
 # Secrets
 .env
 *.pem
+
+# Web
+node_modules/
+.next/
+out/
+.env.*
+!.env.example
+*.tsbuildinfo
+
+# Generated release archives
+apps/web/public/downloads/

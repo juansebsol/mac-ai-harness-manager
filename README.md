@@ -1,65 +1,32 @@
 # Harness Manager
 
-Native macOS control center for AI coding harnesses — CLIs, apps, MCP servers, skills, providers, and processes.
+Your AI coding tools, together in one native Mac app. Discover harnesses, review updates, inspect your setup, and follow real harness news. Free and open source under Apache 2.0.
 
-Not an AI coding agent itself. It sits above harnesses and manages them.
+## Get the app
 
-## Requirements
+The website's **Download for Mac** button serves the packaged app. Requires macOS 14+; supports Apple silicon and Intel. The current 0.1.0 preview is ad-hoc signed and not notarized. No public release has been published yet. See [distribution](Docs/DISTRIBUTION.md) for packaging and release requirements.
 
-- macOS 14+
-- Xcode 15+ (or Xcode Command Line Tools with full Xcode for SwiftUI app builds)
-
-## Build
-
-```bash
-./Scripts/build.sh          # Release
-./Scripts/build.sh Debug    # Debug
-```
-
-Output:
+## Repository
 
 ```text
-build/Harness Manager.app
+apps/mac/   SwiftUI app, Xcode project, scripts, tests
+apps/web/   Next.js product site, native screenshots, press pages
+content/    Native and gallery capture scripts, exported launch media
+Docs/       Design, architecture, distribution, validation
 ```
 
-Open:
+## Development
 
-```bash
-open "build/Harness Manager.app"
+Xcode is needed only to develop/build the Mac app, not to use a packaged download.
+
+```sh
+make run           # Build and open the native app
+make test          # Isolated install/update and news parser tests
+make package       # Universal DMG + SHA-256 for the website
+make native-shots  # Capture six real SwiftUI screens with sample data
+cd apps/web && npm ci
 ```
 
-Or open `HarnessManager.xcodeproj` in Xcode and run the **HarnessManager** scheme.
+From the root: `make web`, `make web-build`, and `make web-lint`. With the site running, `make gallery PORT=3000` produces six 2540 × 1520 press images. All media uses actual native app captures. See [media workflow](content/README.md).
 
-## Architecture
-
-| Area | Role |
-|------|------|
-| `Registry/` | Declarative harness definitions — add a new harness here |
-| `Services/` | Discovery, package managers, processes, MCP, skills, updates, command runner |
-| `Diagnostics/` | Pluggable doctor checks per harness |
-| `Views/` | Native SwiftUI (NavigationSplitView, tables, sheets, menu bar) |
-| `Models/` | Codable domain types |
-
-Discovery is **local and read-only**. Mutating actions (updates, terminate) require explicit user confirmation and show the exact command.
-
-## Initial harness support
-
-**Complete detection:** Claude Code, Codex CLI, Gemini CLI, OpenCode, Cursor, Warp
-
-**Incomplete placeholders:** T3 Code, Conductor, Superset, Paseo, Emdash, Hermes, Kiro, ZCode, Antigravity, OpenChamber, Vibe Kanban
-
-## Smoke test
-
-```bash
-./Scripts/smoke-test.sh
-```
-
-This builds Release, launches the app, asserts it stays alive, confirms the main thread is idle, and checks CPU settles near 0% (guards against the SwiftUI main-menu invalidation beach-ball).
-
-## Workspace and release feeds
-
-Discover prioritizes supported tools; enable “Include tools with limited support” to see incomplete catalog entries. Harness news fetches stable releases from the official Claude Code, Codex, and Gemini CLI GitHub repositories, with search, source filters, and retry feedback. GitHub rate limits and network failures are shown inline.
-
-Install/update commands use the discovered PATH. Supported npm tools can use npm, pnpm, or Bun; Homebrew inventory includes casks. Native Claude Code supports `claude update`. Apps installed outside a supported package manager use their own updater or vendor website. Harness Manager itself does not yet have a signed self-update distribution service.
-
-Run `./Scripts/test-workflows.sh` for isolated command workflow checks. These use temporary fake package managers and do not install or update real tools.
+More: [Mac app](apps/mac/README.md), [website](apps/web/README.md), [design](Docs/DESIGN.md), [structure](Docs/STRUCTURE.md).

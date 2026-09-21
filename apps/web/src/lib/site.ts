@@ -13,6 +13,16 @@ export const tools = [
   { id: "cursor", name: "Cursor" },
   { id: "opencode", name: "OpenCode" },
   { id: "warp", name: "Warp" },
+  { id: "antigravity", name: "Antigravity" },
+  { id: "antigravity-ide", name: "Antigravity IDE" },
+  { id: "t3-code", name: "T3 Code" },
+  { id: "conductor", name: "Conductor" },
+  { id: "superset", name: "Superset" },
+  { id: "paseo", name: "Paseo" },
+  { id: "cmux", name: "cmux" },
+  { id: "orca", name: "Orca" },
+  { id: "herdr", name: "Herdr" },
+  { id: "emdash", name: "Emdash" },
 ];
 
 export const tour = [

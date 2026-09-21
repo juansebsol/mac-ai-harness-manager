@@ -8,3 +8,9 @@ swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessMana
 
 swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessManager/Services/HarnessNewsService.swift Tests/NewsFeedTests.swift -o "$TEST_DIR/news-tests"
 "$TEST_DIR/news-tests"
+
+swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessManager/Services/DiscoverCatalogService.swift Tests/DiscoverCatalogTests.swift -o "$TEST_DIR/catalog-tests"
+"$TEST_DIR/catalog-tests"
+
+swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessManager/Services/BenchmarkService.swift Tests/BenchmarkTests.swift -o "$TEST_DIR/benchmark-tests"
+"$TEST_DIR/benchmark-tests"

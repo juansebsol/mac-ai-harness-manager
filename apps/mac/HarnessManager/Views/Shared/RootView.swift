@@ -92,6 +92,8 @@ struct ContentRouterView: View {
             StoreView()
         case .news:
             HarnessNewsView()
+        case .benchmarks:
+            BenchmarksView()
         case .providers:
             ProvidersView()
         case .mcpServers:

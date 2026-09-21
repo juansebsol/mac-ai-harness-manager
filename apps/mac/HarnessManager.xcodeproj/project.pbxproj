@@ -6,6 +6,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+ FFFFFFFF1111111111111111 /* BenchmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFFFFFF2222222222222222; };
+ EEEEEEEE1111111111111111 /* BenchmarkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEEEEEEE2222222222222222; };
+ DDDDDDDD1111111111111111 /* DiscoverCatalogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDDDDDD2222222222222222; };
  CCCCCCCC1111111111111111 /* HarnessNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCCCCCC2222222222222222 /* HarnessNewsService.swift */; };
  BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBBBBBB2222222222222222; };
  AAAAAAAA1111111111111111 /* HarnessNewsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAAAAAAA2222222222222222; };
@@ -53,6 +56,9 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+ FFFFFFFF2222222222222222 /* BenchmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarksView.swift; sourceTree = "<group>"; };
+ EEEEEEEE2222222222222222 /* BenchmarkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkService.swift; sourceTree = "<group>"; };
+ DDDDDDDD2222222222222222 /* DiscoverCatalogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverCatalogService.swift; sourceTree = "<group>"; };
  CCCCCCCC2222222222222222 /* HarnessNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessNewsService.swift; sourceTree = "<group>"; };
  BBBBBBBB2222222222222222 /* HarnessLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessLogoView.swift; sourceTree = "<group>"; };
  AAAAAAAA2222222222222222 /* HarnessNewsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessNewsView.swift; sourceTree = "<group>"; };
@@ -210,6 +216,8 @@
 			isa = PBXGroup;
 			children = (
  CCCCCCCC2222222222222222 /* HarnessNewsService.swift */,
+ DDDDDDDD2222222222222222 /* DiscoverCatalogService.swift */,
+ EEEEEEEE2222222222222222 /* BenchmarkService.swift */,
 				AF9DB7711D254C85B096A4FB /* CommandRunner.swift */,
 				6E5CB9BAD3F84ED083BCC534 /* DiscoveryCache.swift */,
 				EA1F5783ABBE48E789CD285B /* HarnessDiscoveryService.swift */,
@@ -289,6 +297,7 @@
 				A44A9BB26FFA48BC81E94FEB /* RootView.swift */,
  BBBBBBBB2222222222222222 /* HarnessLogoView.swift */,
  AAAAAAAA2222222222222222 /* HarnessNewsView.swift */,
+ FFFFFFFF2222222222222222 /* BenchmarksView.swift */,
 				F89CA6C37580418D94A4BC6C /* Sheets.swift */,
 			);
 			path = Shared;
@@ -375,6 +384,8 @@
 			buildActionMask = 2147483647;
 			files = (
  CCCCCCCC1111111111111111 /* HarnessNewsService.swift in Sources */,
+ DDDDDDDD1111111111111111 /* DiscoverCatalogService.swift in Sources */,
+ EEEEEEEE1111111111111111 /* BenchmarkService.swift in Sources */,
 				ABF5C38B1ADB49E685B1033B /* StoreView.swift in Sources */,
 				1E69E7E3C35444048400788B /* AppState.swift in Sources */,
 				D80BEC8FF80042FFB71D5A2D /* HarnessManagerApp.swift in Sources */,
@@ -415,6 +426,7 @@
 				65383E50CD3F4E88ABC86FF2 /* RootView.swift in Sources */,
  BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */,
  AAAAAAAA1111111111111111 /* HarnessNewsView.swift in Sources */,
+ FFFFFFFF1111111111111111 /* BenchmarksView.swift in Sources */,
 				B76A8562E0A7412598E99344 /* Sheets.swift in Sources */,
 				F112A828370D4DC1B0AF5382 /* SidebarView.swift in Sources */,
 			);

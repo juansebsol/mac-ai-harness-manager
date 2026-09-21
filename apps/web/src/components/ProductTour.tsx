@@ -34,7 +34,7 @@ export function ProductTour() {
         </motion.div>
       </AnimatePresence>
     </div>
-    <div className="tour-caption"><div><strong>{tour[active].title}</strong><p>{tour[active].description}</p></div><span>Actual Mac app · Sample workspace</span><a className="tour-full" href={`/screenshots/${tour[active].id}.png`} target="_blank" rel="noreferrer">View full size <ArrowRightIcon size={15} /></a></div>
+    <div className="tour-caption"><div><strong>{tour[active].title}</strong><p>{tour[active].description}</p></div><a className="tour-full" href={`/screenshots/${tour[active].id}.png`} target="_blank" rel="noreferrer">View full size <ArrowRightIcon size={15} /></a></div>
   </div>;
 }
 

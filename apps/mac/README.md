@@ -63,3 +63,7 @@ Discover prioritizes supported tools; enable “Include tools with limited suppo
 Install/update commands use the discovered PATH. Supported npm tools can use npm, pnpm, or Bun; Homebrew inventory includes casks. Native Claude Code supports `claude update`. Apps installed outside a supported package manager use their own updater or vendor website. Harness Manager itself does not yet have a signed self-update distribution service.
 
 Run `./Scripts/test-workflows.sh` for isolated command workflow checks. These use temporary fake package managers and do not install or update real tools.
+
+## Benchmarks
+
+The Benchmarks sidebar page shows Modelgrep rankings with native charts, model search, source links, pricing, and capability metrics. Each view fetches up to 200 models. Scores refresh on opening after one hour or manually, with an offline cache and explicit errors. See [benchmark data and refresh behavior](docs/benchmarks.md).

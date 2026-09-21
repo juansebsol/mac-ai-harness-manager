@@ -5,7 +5,8 @@ import { ArrowUpRightIcon, ArrowRightIcon, AppleLogoIcon, GithubLogoIcon, Downlo
 import { Brand } from "@/components/Brand";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ProductTour, Reveal } from "@/components/ProductTour";
-import { site, tools } from "@/lib/site";
+import { site } from "@/lib/site";
+import { ToolMarquee } from "@/components/ToolMarquee";
 
 function Download({ className = "button primary" }: { className?: string }) {
   return <a className={className} href={site.download} download><AppleLogoIcon size={21} weight="fill" />Download for Mac<ArrowDown /></a>;
@@ -18,10 +19,12 @@ export default function Home() {
     <header className="site-header wrap"><Brand /><nav aria-label="Main navigation"><a href="#workspace">The workspace</a><a href="#how-it-works">How it works</a><Link href="/press">Press kit</Link></nav><ThemeToggle /><a href={site.download} className="nav-cta" download>Get the app<ArrowUpRightIcon size={15} /></a></header>
     <main id="main">
       <section className="hero wrap">
-        <div className="hero-intro"><div><p className="eyebrow">A NATIVE HOME FOR YOUR AI TOOLS</p><h1>Your AI tools.<br /><span>Finally, together.</span></h1></div><div className="hero-aside"><p>Discover, install, and keep your coding harnesses in order. One thoughtful little app for your Mac.</p><Download /><div className="download-meta">Free & open source<span>macOS 14+</span></div></div></div>
-        <ProductTour />
+        <div className="hero-showcase">
+          <div className="hero-copy"><p className="eyebrow">A NATIVE HOME FOR YOUR AI TOOLS</p><h1>Your AI tools.<br /><span>All in one place.</span></h1><p className="hero-description">See what’s installed, find your next harness, and stay on top of updates from one simple Mac app.</p><div className="hero-actions"><Download /><a className="hero-source-link" href={site.repository}>Free and open source <ArrowUpRightIcon size={15} /></a></div><div className="hero-availability"><AppleLogoIcon size={15} weight="fill" /> macOS 14 or later <span>·</span> Apple silicon and Intel</div></div>
+          <ProductTour />
+        </div>
       </section>
-      <section className="tool-strip wrap" aria-label="Supported tools"><p>Your favorites.<br /><strong>And your next favorites.</strong></p><div>{tools.map(tool => <a href="#workspace" key={tool.id} aria-label={`Explore ${tool.name} in Harness Manager`}><Image src={`/tools/${tool.id}.png`} alt="" width={38} height={38} /><span>{tool.name}</span></a>)}</div></section>
+      <ToolMarquee />
       <section className="workspace-section wrap section-space" id="workspace">
         <Reveal className="section-heading"><p className="eyebrow">LESS MANAGING. MORE MAKING.</p><h2>A clearer head.<br /><span>A tidier toolbox.</span></h2><p>The tools keep coming. Give them a home that makes sense.</p></Reveal>
         <div className="feature-spread"><Reveal className="discover-feature"><div className="feature-copy"><span className="feature-number">01 / DISCOVER</span><h3>Meet your next<br />favorite tool.</h3><p>Claude Code, Codex, Gemini CLI, and more. Browse the catalog, see your install options, and try something new.</p></div><div className="feature-screen"><Image src={screenshots.discover} alt="Discover screen of the actual Mac app, with logos and install options" width={2400} height={1600} sizes="(max-width: 768px) 90vw, 750px" /></div></Reveal>

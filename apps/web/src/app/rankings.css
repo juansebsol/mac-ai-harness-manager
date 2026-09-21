@@ -1,0 +1,43 @@
+/* Real, full-frame app captures anchor the model-comparison story. */
+.rankings-section{padding:90px 0 100px;background:var(--surface);border-top:1px solid var(--line)}
+.rankings-heading{text-align:center;max-width:850px;margin:0 auto 42px}
+.rankings-heading h2{font-size:clamp(42px,4.7vw,64px);line-height:1.09;letter-spacing:-2.8px;font-weight:560}
+.rankings-heading>p:last-child{font-size:16px;line-height:1.7;color:var(--muted);max-width:620px;margin:22px auto 0}
+.rankings-showcase{min-width:0}
+.rankings-toolbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-bottom:22px}
+.rankings-tabs{display:flex;gap:7px;flex-wrap:wrap}
+.rankings-tabs button{display:flex;align-items:center;gap:9px;min-height:44px;padding:12px 20px;border:1px solid transparent;border-radius:8px;color:var(--muted);background:transparent;font-weight:550;font-size:13px;transition:background .2s,color .2s}
+.rankings-tabs button:hover{background:var(--paper);color:var(--ink)}
+.rankings-tabs button[aria-selected=true]{background:var(--ink);color:var(--surface)}
+.rankings-preview-label{font-size:12px;color:var(--muted)}
+.rankings-preview{display:grid;grid-template-columns:minmax(0,3fr) minmax(230px,1fr);gap:34px;align-items:center}
+.rankings-screen{min-width:0;background:var(--silver);padding:22px;border-radius:16px;border:1px solid var(--line)}
+.rankings-screen>div{aspect-ratio:1200/800}
+.rankings-screen img{display:block;width:100%;height:auto;border-radius:8px;box-shadow:0 12px 35px #1c263522}
+.rankings-screen a{display:block;border-radius:8px}
+.rankings-context h3{font-size:28px;line-height:1.18;letter-spacing:-1px;text-wrap:balance}
+.rankings-context>p{font-size:14px;line-height:1.75;color:var(--muted);margin-top:18px}
+.rankings-context .text-link{line-height:1.6;min-height:44px}
+.rankings-stats{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:30px 0 20px;padding-top:24px;border-top:1px solid var(--line)}
+.rankings-stats>div{display:flex;flex-direction:column-reverse;gap:7px}
+.rankings-stats dt{font-size:11px;line-height:1.5;color:var(--muted)}
+.rankings-stats dd{margin:0;font-size:42px;line-height:1;letter-spacing:-2px;font-weight:550;font-variant-numeric:tabular-nums}
+.rankings-provenance{display:flex;justify-content:space-between;gap:20px;align-items:center;margin:17px 0 30px;color:var(--muted);font-size:11px}
+.rankings-provenance a{display:flex;align-items:center;gap:5px;min-height:32px}
+.rankings-provenance a:hover{color:var(--accent)}
+.rankings-collections{border-block:1px solid var(--line)}
+.rankings-collections summary{display:flex;justify-content:space-between;align-items:center;gap:20px;cursor:pointer;list-style:none;padding:25px 0;font-size:13px;color:var(--muted)}
+.rankings-collections summary::-webkit-details-marker{display:none}
+.rankings-collections summary>span{display:flex;align-items:center;gap:22px}
+.rankings-collections summary strong{font-size:14px;color:var(--ink);font-weight:550}
+.rankings-collections summary svg{flex-shrink:0;transition:transform .2s}
+.rankings-collections[open] summary svg{transform:rotate(45deg)}
+.rankings-collections summary:focus-visible,.rankings-preview:focus-visible{outline:3px solid var(--accent);outline-offset:5px}
+.rankings-group-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:25px;padding:12px 0 30px}
+.rankings-group-grid h3{font-size:12px;line-height:1.5;letter-spacing:0;color:var(--accent);margin-bottom:16px;font-weight:650}
+.rankings-group-grid ul{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+.rankings-group-grid li{font-size:12px;line-height:1.5}
+.rankings-method{font-size:11px;line-height:1.7;color:var(--muted);max-width:850px;padding-bottom:25px}
+@media(max-width:1100px){.rankings-preview{grid-template-columns:1fr;gap:28px}.rankings-context{display:grid;grid-template-columns:1fr 1fr;gap:0 36px}.rankings-context h3{max-width:450px;grid-row:1/3}.rankings-context>p{margin:0}.rankings-stats{grid-column:1;grid-row:3;margin-top:22px;max-width:300px}.rankings-context .text-link{grid-column:2;grid-row:2;align-self:end;margin-top:12px}.rankings-preview-label{display:none}}
+@media(max-width:768px){.rankings-section{padding:64px 0}.rankings-heading{text-align:left;margin-bottom:30px}.rankings-heading h2{font-size:clamp(36px,7vw,48px);letter-spacing:-1.8px}.rankings-heading>p:last-child{font-size:14px;margin-top:18px}.rankings-toolbar{padding-bottom:17px}.rankings-tabs{gap:3px;width:100%}.rankings-tabs button{flex:1;padding:11px 10px;gap:7px;font-size:12px}.rankings-tabs button svg{width:17px}.rankings-screen{padding:10px;border-radius:11px}.rankings-screen img{border-radius:5px}.rankings-preview{gap:25px}.rankings-context{display:block}.rankings-context h3{font-size:28px;max-width:380px}.rankings-context>p{margin-top:13px}.rankings-stats{max-width:none;margin-top:22px;padding-top:20px}.rankings-stats dd{font-size:36px}.rankings-context .text-link{margin:0}.rankings-provenance{display:block;margin:16px 0 23px;font-size:10px}.rankings-provenance a{margin-top:5px}.rankings-collections summary>span{display:block;line-height:1.7}.rankings-collections summary strong{display:block;margin-top:4px}.rankings-group-grid{grid-template-columns:1fr 1fr;gap:28px 22px}.rankings-group-grid h3{margin-bottom:12px}.rankings-group-grid ul{gap:9px}}
+@media(prefers-reduced-motion:reduce){.rankings-tabs button,.rankings-collections summary svg{transition:none}}

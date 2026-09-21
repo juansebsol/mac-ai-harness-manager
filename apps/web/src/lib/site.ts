@@ -1,6 +1,6 @@
 export const site = {
   name: "Harness Manager",
-  description: "Your AI coding tools, together in one native Mac app. Discover harnesses, review updates, and keep up with what’s next. Free and open source.",
+  description: "Manage your AI stack in one native Mac app. Discover tools, MCPs, and skills, review updates, and compare models across 31 ranking collections. Free and open source.",
   repository: "https://github.com/juansebsol/mac-ai-harness-manager",
   download: process.env.NEXT_PUBLIC_DOWNLOAD_URL?.startsWith("https://") ? process.env.NEXT_PUBLIC_DOWNLOAD_URL : "/downloads/Harness-Manager.dmg",
   version: "0.1.0",
@@ -33,10 +33,20 @@ export const tour = [
 ];
 
 export const slides = [
-  { id: "01", name: "overview", title: "Your AI tools.\nFinally, together.", description: "A native home for your coding harnesses. Free and open source.", view: "workspace", label: "MEET HARNESS MANAGER" },
-  { id: "02", name: "discover", title: "A new favorite\nis out there.", description: "Explore the tools shaping how we code. Install with a clear view of what happens next.", view: "discover", label: "EXPAND YOUR TOOLBOX" },
+  { id: "01", name: "overview", title: "Your AI stack.\nUnder control.", description: "Manage your tools. Compare models. Keep building. Native to Mac, free and open source.", view: "workspace", label: "MEET HARNESS MANAGER" },
+  { id: "02", name: "discover", title: "Build a better\nAI stack.", description: "Discover harnesses, MCPs, and skills. Find the next addition to your workflow, all in one catalog.", view: "discover", label: "EXPAND YOUR TOOLBOX" },
   { id: "03", name: "updates", title: "Less upkeep.\nMore time.", description: "Know what needs an update. Review the command. Get back to your work.", view: "updates", label: "STAY CURRENT" },
   { id: "04", name: "providers", title: "Your setup.\nIn plain sight.", description: "Providers, MCP servers, and skills. A clearer view of the pieces behind your tools.", view: "providers", label: "UNDERSTAND YOUR WORKSPACE" },
   { id: "05", name: "processes", title: "Know what’s\nrunning.", description: "See active harnesses, resource usage, and the projects they belong to.", view: "processes", label: "LIVE ON YOUR MAC" },
   { id: "06", name: "news", title: "A little ahead\nof the curve.", description: "News, new tools, and thoughtful reads. With real sources, beyond the changelog.", view: "news", label: "THE HARNESS BRIEFING" },
+  { id: "07", name: "benchmarks", title: "Right model.\nRight task.", description: "31 ranking collections. Coding, design, agents, reasoning, and more. Compare the models for your next project.", view: "rankings-coding", label: "BENCHMARKS & RANKINGS" },
+];
+
+// Match the collections offered by the native Benchmarks page.
+export const rankingGroups = [
+  { name: "General", collections: ["Smartest", "Coding", "Agents", "Fastest", "Low latency", "Cheapest", "Free"] },
+  { name: "Development", collections: ["Design", "UI components", "Full-stack apps", "Mobile apps", "Tool calling", "Long-context reasoning"] },
+  { name: "Reasoning & knowledge", collections: ["Reasoning", "Math", "Science", "Writing", "Instruction following", "RAG", "SQL and analysis"] },
+  { name: "Deployment", collections: ["Local", "Open-source", "Small and fast", "Long context", "Vision", "Uncensored"] },
+  { name: "Creative & specialist", collections: ["Data visualization", "SVG", "Game development", "3D", "Roleplay"] },
 ];

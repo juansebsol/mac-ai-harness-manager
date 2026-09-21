@@ -101,6 +101,7 @@ enum MarketingCapture {
         return CommandLine.arguments[i + 1]
     }
     static var didExport = false
+    static let benchmarks = BenchmarkStore(inMemory: true)
     static let news: [HarnessArticle] = [
         HarnessNewsService.article(source: HarnessNewsService.sources[1], title: "The Anatomy of Harness Engineering: How to Evaluate, Iterate, and Guard AI Coding Agents", url: URL(string: "https://developers.googleblog.com/the-anatomy-of-harness-engineering-how-to-evaluate-iterate-and-guard-ai-coding-agents/")!, date: nil, summary: "A guide to evaluating the actions of coding agents, iterating on prompts, and catching regressions with behavioral tests."),
         HarnessNewsService.article(source: HarnessNewsService.sources[0], title: "Introducing the Agents API", url: URL(string: "https://openai.com/index/introducing-the-agents-api")!, date: HarnessNewsService.parseDate("2026-09-10T00:00:00Z"), summary: "Read the product announcement from OpenAI."),
@@ -132,13 +133,23 @@ enum MarketingCapture {
         do {
             let folder = URL(fileURLWithPath: path, isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            // Fetch the real rankings before rendering; never export a loading or error screen.
+            for id in ["smartest", "coding", "design"] {
+                guard let collection = RankingCollection.catalog.first(where: { $0.id == id }) else { throw CocoaError(.coderInvalidValue) }
+                await benchmarks.refresh(collection, force: true)
+                guard let snapshot = benchmarks.rankingSnapshots[id], !snapshot.entries.isEmpty,
+                      benchmarks.errors["ranking-\(id)"] == nil else {
+                    throw NSError(domain: "MarketingCapture", code: 1, userInfo: [NSLocalizedDescriptionKey: "Could not load live \(id) rankings. Existing marketing images have not been replaced."])
+                }
+            }
             try await Task.sleep(for: .milliseconds(700))
             guard let window = NSApp.windows.first(where: { $0.contentView != nil && $0.isVisible }) else { throw CocoaError(.fileWriteUnknown) }
             window.appearance = NSAppearance(named: .aqua)
             window.setContentSize(NSSize(width: 1200, height: 800))
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
-            for (name, page, filter) in [("workspace", SidebarItem.allHarnesses, HarnessFilter.all), ("discover", .store, .all), ("updates", .allHarnesses, .updateAvailable), ("providers", .providers, .all), ("processes", .processes, .all), ("news", .news, .all)] {
+            for (name, page, filter) in [("workspace", SidebarItem.allHarnesses, HarnessFilter.all), ("discover", .store, .all), ("updates", .allHarnesses, .updateAvailable), ("providers", .providers, .all), ("processes", .processes, .all), ("news", .news, .all), ("benchmarks", .benchmarks, .all), ("rankings-coding", .benchmarks, .all), ("rankings-design", .benchmarks, .all)] {
+                state.marketingRankingID = name == "rankings-coding" ? "coding" : name == "rankings-design" ? "design" : "smartest"
                 state.selectedSidebar = page; state.harnessFilter = filter
                 try await Task.sleep(for: .milliseconds(550))
                 let destination = folder.appendingPathComponent("\(name).png")
@@ -150,7 +161,7 @@ enum MarketingCapture {
                 guard capture.terminationStatus == 0, FileManager.default.fileExists(atPath: destination.path) else { throw CocoaError(.fileWriteUnknown) }
 
             }
-            print("Exported six native SwiftUI screenshots to \(path)")
+            print("Exported nine native SwiftUI screenshots to \(path)")
             NSApp.terminate(nil)
         } catch { fputs("Screenshot export failed: \(error)\n", stderr); exit(1) }
     }

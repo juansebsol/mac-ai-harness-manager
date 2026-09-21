@@ -11,6 +11,8 @@ npm run build
 
 Before the production build, run `make package` from the repository root or configure `NEXT_PUBLIC_DOWNLOAD_URL` with a real published HTTPS download. The build fails if no download is available.
 
-Refresh app imagery with root `make native-shots`. All site and press images import the real native captures from `public/screenshots`. Use `make gallery PORT=3000` to export the six press layouts.
+Refresh app imagery with root `make native-shots`. All site and press images import the real native captures from `public/screenshots`. Use `make gallery PORT=3000` to export the seven press layouts.
+
+The Benchmarks landing section previews three real ranking screens and lists all 31 collections offered by the app. These website images are snapshots; the Mac app fetches current rankings from Modelgrep. Keep `rankingGroups` in `src/lib/site.ts` aligned with `RankingCollection.catalog` when adding or removing collections.
 
 No accounts, forms, analytics, or remote app control. Native installation and updates happen only inside the Mac app.

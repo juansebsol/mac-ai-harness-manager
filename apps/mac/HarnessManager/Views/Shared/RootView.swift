@@ -93,7 +93,12 @@ struct ContentRouterView: View {
         case .news:
             HarnessNewsView()
         case .benchmarks:
-            BenchmarksView()
+            if appState.isMarketingCapture {
+                BenchmarksView(store: MarketingCapture.benchmarks, ranking: RankingCollection.catalog.first { $0.id == appState.marketingRankingID })
+                    .id(appState.marketingRankingID)
+            } else {
+                BenchmarksView()
+            }
         case .providers:
             ProvidersView()
         case .mcpServers:

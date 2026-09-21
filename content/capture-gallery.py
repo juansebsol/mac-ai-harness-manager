@@ -14,7 +14,7 @@ port, chrome = sys.argv[1:]
 root = Path(__file__).resolve().parent
 media = root / "product-hunt" / "media"
 media.mkdir(parents=True, exist_ok=True)
-names = ["overview", "discover", "updates", "providers", "processes", "news"]
+names = ["overview", "discover", "updates", "providers", "processes", "news", "benchmarks"]
 for number, name in enumerate(names, 1):
     url = f"http://127.0.0.1:{port}/press/gallery/{number:02}"
     with urllib.request.urlopen(url, timeout=20) as response:
@@ -22,7 +22,8 @@ for number, name in enumerate(names, 1):
             raise RuntimeError(f"Page failed: {url}")
     with tempfile.TemporaryDirectory(prefix="harness-gallery-") as profile:
         output = Path(profile) / "capture.png"
-        args = [chrome, "--headless=new", "--disable-gpu", "--hide-scrollbars", "--no-first-run",
+        args = [chrome, "--headless=new", "--deterministic-mode", "--disable-gpu", "--disable-partial-raster",
+                "--run-all-compositor-stages-before-draw", "--disable-features=PaintHolding", "--hide-scrollbars", "--no-first-run",
                 f"--user-data-dir={profile}", "--force-device-scale-factor=2", "--virtual-time-budget=6000",
                 "--window-size=1270,760", f"--screenshot={output}", url]
         # Chrome on macOS can stay alive after writing a screenshot. Own a process
@@ -59,4 +60,4 @@ for number, name in enumerate(names, 1):
                 process.wait()
 (root / "reddit").mkdir(exist_ok=True)
 shutil.copyfile(media / "01-overview.png", root / "reddit" / "share-image.png")
-print("Gallery ready: six 2540×1520 gallery images using native SwiftUI screenshots.")
+print("Gallery ready: seven 2540×1520 gallery images using native SwiftUI screenshots.")

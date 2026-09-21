@@ -10,13 +10,20 @@ struct BenchmarksView: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var store = BenchmarkStore()
+    @State private var store: BenchmarkStore
     @State private var mode: Mode = .charts
     @State private var selected = BenchmarkDefinition.catalog[0]
     @State private var collection = RankingCollection.catalog[0]
     @State private var categorySearch = ""
     @State private var modelSearch = ""
     @State private var topCount = 6
+
+    @MainActor
+    init(store: BenchmarkStore? = nil, ranking: RankingCollection? = nil) {
+        _store = State(initialValue: store ?? BenchmarkStore())
+        _mode = State(initialValue: ranking == nil ? .charts : .rankings)
+        _collection = State(initialValue: ranking ?? RankingCollection.catalog[0])
+    }
 
     private var key: String { mode == .charts ? selected.id : "ranking-\(collection.id)" }
     private var loading: Bool { store.loading.contains(key) }

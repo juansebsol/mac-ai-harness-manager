@@ -218,12 +218,14 @@ final class BenchmarkStore {
     private(set) var errors: [String: String] = [:]
     private var attempted: [String: Date] = [:]
     private let cacheURL: URL
+    private let inMemory: Bool
     static let refreshInterval: TimeInterval = 60 * 60
 
-    init() {
+    init(inMemory: Bool = false) {
+        self.inMemory = inMemory
         cacheURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("HarnessManager/modelgrep-v5.json")
-        if let data = try? Data(contentsOf: cacheURL), let cache = try? JSONDecoder().decode(Cache.self, from: data) {
+        if !inMemory, let data = try? Data(contentsOf: cacheURL), let cache = try? JSONDecoder().decode(Cache.self, from: data) {
             snapshots = cache.metrics
             rankingSnapshots = cache.rankings
         }
@@ -249,6 +251,7 @@ final class BenchmarkStore {
             }
             snapshots[id] = try BenchmarkParser.parse(data, metric: benchmark)
             errors[id] = nil
+            guard !inMemory else { return }
             do {
                 try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try JSONEncoder().encode(Cache(metrics: snapshots, rankings: rankingSnapshots)).write(to: cacheURL, options: .atomic)
@@ -275,6 +278,7 @@ final class BenchmarkStore {
             }
             rankingSnapshots[collection.id] = try RankingParser.parse(data)
             errors[id] = nil
+            guard !inMemory else { return }
             do {
                 try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 try JSONEncoder().encode(Cache(metrics: snapshots, rankings: rankingSnapshots)).write(to: cacheURL, options: .atomic)

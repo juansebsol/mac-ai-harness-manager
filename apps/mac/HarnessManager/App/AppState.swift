@@ -86,6 +86,7 @@ final class AppState {
     var scanMessage = "Scanning your Mac for AI developer tools…"
     var lastRefresh: Date?
     var isMarketingCapture = false
+    var marketingRankingID = "smartest"
     var searchText = ""
     var harnessFilter: HarnessFilter = .all
 

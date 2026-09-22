@@ -9,7 +9,6 @@ struct BenchmarksView: View {
         var icon: String { self == .charts ? "chart.bar.xaxis" : "list.number" }
     }
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var store: BenchmarkStore
     @State private var mode: Mode = .charts
     @State private var selected = BenchmarkDefinition.catalog[0]
@@ -27,6 +26,9 @@ struct BenchmarksView: View {
 
     private var key: String { mode == .charts ? selected.id : "ranking-\(collection.id)" }
     private var loading: Bool { store.loading.contains(key) }
+    // Show the destination's placeholder on the same render as the selection,
+    // before its asynchronous request has had a chance to start.
+    private var awaitingResults: Bool { fetchedAt == nil && (loading || store.errors[key] == nil) }
     private var metricSnapshot: BenchmarkSnapshot? { store.snapshots[selected.id] }
     private var rankingSnapshot: RankingSnapshot? { store.rankingSnapshots[collection.id] }
     private var fetchedAt: Date? { mode == .charts ? metricSnapshot?.fetchedAt : rankingSnapshot?.fetchedAt }
@@ -87,7 +89,17 @@ struct BenchmarksView: View {
             .background(Color(nsColor: .windowBackgroundColor))
         }
         .navigationTitle("Benchmarks")
-        .task(id: key) { await refresh() }
+        .onChange(of: key, initial: true) { _, _ in
+            let metric = selected
+            let ranking = collection
+            let showRankings = mode == .rankings
+            // The store deduplicates requests. Let a request finish when the user
+            // switches away, so switching back reuses it instead of starting over.
+            Task { [store] in
+                if showRankings { await store.refresh(ranking) }
+                else { await store.refresh(metric) }
+            }
+        }
         .task {
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(60)) } catch { return }
@@ -105,7 +117,7 @@ struct BenchmarksView: View {
             HStack(spacing: 4) {
                 ForEach(Mode.allCases) { option in
                     Button {
-                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.16)) { mode = option }
+                        mode = option
                         categorySearch = ""
                         modelSearch = ""
                     } label: {
@@ -204,7 +216,7 @@ struct BenchmarksView: View {
                         }.padding(14).frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
                     }
-                    if fetchedAt == nil && loading {
+                    if awaitingResults {
                         loadingSkeleton
                     } else if rows.isEmpty {
                         ContentUnavailableView(modelSearch.isEmpty ? "No results available" : "No matching models",
@@ -248,7 +260,7 @@ struct BenchmarksView: View {
                 } else {
                     Text("Live model data")
                 }
-                if loading { ProgressView().controlSize(.mini) }
+                if loading || awaitingResults { ProgressView().controlSize(.mini) }
                 Spacer()
                 searchField("Search models", text: $modelSearch).frame(maxWidth: 220)
             }.font(.system(size: 11)).foregroundStyle(.secondary)
@@ -316,7 +328,15 @@ struct BenchmarksView: View {
 
     private var loadingSkeleton: some View {
         VStack(alignment: .leading, spacing: 22) {
-            Text("Loading model results").font(.system(size: 16, weight: .semibold))
+            HStack(spacing: 12) {
+                ProgressView().controlSize(.small)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(mode == .rankings ? "Loading \(collection.title.lowercased()) rankings" : "Loading \(selected.name.lowercased()) results")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Fetching the latest results from Modelgrep…")
+                        .font(.system(size: 12)).foregroundStyle(.secondary)
+                }
+            }
             ForEach(0..<6) { index in
                 HStack(spacing: 20) {
                     RoundedRectangle(cornerRadius: 5).fill(.quaternary).frame(width: 150, height: 15)

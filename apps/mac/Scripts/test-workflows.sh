@@ -14,3 +14,6 @@ swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessMana
 
 swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessManager/Services/BenchmarkService.swift Tests/BenchmarkTests.swift -o "$TEST_DIR/benchmark-tests"
 "$TEST_DIR/benchmark-tests"
+
+swiftc -module-cache-path "$TEST_DIR/module-cache" -parse-as-library HarnessManager/Models/CommandResult.swift HarnessManager/Services/CommandRunner.swift HarnessManager/Services/PathEnvironmentService.swift HarnessManager/Services/UsageService.swift HarnessManager/Services/DesktopUsageService.swift Tests/UsageTests.swift -o "$TEST_DIR/usage-tests"
+"$TEST_DIR/usage-tests"

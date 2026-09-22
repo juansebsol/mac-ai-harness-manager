@@ -249,7 +249,9 @@ final class BenchmarkStore {
                 let message = response.statusCode == 429 ? "Modelgrep is rate limiting requests. Try again later." : "Modelgrep returned HTTP \(response.statusCode). Try again later."
                 throw NSError(domain: "Benchmarks", code: response.statusCode, userInfo: [NSLocalizedDescriptionKey: message])
             }
-            snapshots[id] = try BenchmarkParser.parse(data, metric: benchmark)
+            snapshots[id] = try await Task.detached(priority: .userInitiated) {
+                try BenchmarkParser.parse(data, metric: benchmark)
+            }.value
             errors[id] = nil
             guard !inMemory else { return }
             do {
@@ -276,7 +278,9 @@ final class BenchmarkStore {
             guard let response = response as? HTTPURLResponse, response.statusCode == 200 else {
                 throw NSError(domain: "Rankings", code: 1, userInfo: [NSLocalizedDescriptionKey: "Modelgrep could not load this collection. Try again later."])
             }
-            rankingSnapshots[collection.id] = try RankingParser.parse(data)
+            rankingSnapshots[collection.id] = try await Task.detached(priority: .userInitiated) {
+                try RankingParser.parse(data)
+            }.value
             errors[id] = nil
             guard !inMemory else { return }
             do {

@@ -6,7 +6,7 @@ import SwiftUI
 
 enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
     case allHarnesses, running, problems, store, news, benchmarks
-    case providers, mcpServers, skills
+    case usage, providers, mcpServers, skills
     case processes
     case settings, about
 
@@ -20,6 +20,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         case .store: return "Discover"
         case .news: return "Harness news"
         case .benchmarks: return "Benchmarks"
+        case .usage: return "Usage"
         case .providers: return "Providers"
         case .mcpServers: return "MCP Servers"
         case .skills: return "Skills"
@@ -37,6 +38,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         case .store: return "bag"
         case .news: return "newspaper"
         case .benchmarks: return "chart.bar.xaxis"
+        case .usage: return "gauge.with.dots.needle.50percent"
         case .providers: return "key"
         case .mcpServers: return "server.rack"
         case .skills: return "books.vertical"
@@ -47,7 +49,7 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
     }
 
     static let harnesses: [SidebarItem] = [.allHarnesses, .running, .problems, .store, .news, .benchmarks]
-    static let infrastructure: [SidebarItem] = [.providers, .mcpServers, .skills]
+    static let infrastructure: [SidebarItem] = [.usage, .providers, .mcpServers, .skills]
     static let system: [SidebarItem] = [.processes]
     static let bottom: [SidebarItem] = [.settings, .about]
 }

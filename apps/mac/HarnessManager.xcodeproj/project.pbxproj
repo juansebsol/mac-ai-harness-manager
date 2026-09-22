@@ -7,7 +7,10 @@
 
 /* Begin PBXBuildFile section */
  FFFFFFFF1111111111111111 /* BenchmarksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFFFFFF2222222222222222; };
+ AABBCCEE1111111111111111 /* UsageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCCEE2222222222222222; };
  EEEEEEEE1111111111111111 /* BenchmarkService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEEEEEEE2222222222222222; };
+ AABBCCDD1111111111111111 /* UsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCCDD2222222222222222; };
+ AABBCCAA1111111111111111 /* DesktopUsageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABBCCAA2222222222222222; };
  DDDDDDDD1111111111111111 /* DiscoverCatalogService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDDDDDDD2222222222222222; };
  CCCCCCCC1111111111111111 /* HarnessNewsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCCCCCC2222222222222222 /* HarnessNewsService.swift */; };
  BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBBBBBB2222222222222222; };
@@ -53,11 +56,15 @@
 		B76A8562E0A7412598E99344 /* Sheets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F89CA6C37580418D94A4BC6C /* Sheets.swift */; };
 		F112A828370D4DC1B0AF5382 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1A9D8B501F44D47AFEE1D3C /* SidebarView.swift */; };
 		45923EF0004544E88011F1E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 448E9CDE36874DA6B82674B7 /* Assets.xcassets */; };
+ AABBCCBB1111111111111111 /* OpenUsage-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = AABBCCBB2222222222222222; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
  FFFFFFFF2222222222222222 /* BenchmarksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarksView.swift; sourceTree = "<group>"; };
+ AABBCCEE2222222222222222 /* UsageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageView.swift; sourceTree = "<group>"; };
  EEEEEEEE2222222222222222 /* BenchmarkService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkService.swift; sourceTree = "<group>"; };
+ AABBCCDD2222222222222222 /* UsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UsageService.swift; sourceTree = "<group>"; };
+ AABBCCAA2222222222222222 /* DesktopUsageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesktopUsageService.swift; sourceTree = "<group>"; };
  DDDDDDDD2222222222222222 /* DiscoverCatalogService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoverCatalogService.swift; sourceTree = "<group>"; };
  CCCCCCCC2222222222222222 /* HarnessNewsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessNewsService.swift; sourceTree = "<group>"; };
  BBBBBBBB2222222222222222 /* HarnessLogoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarnessLogoView.swift; sourceTree = "<group>"; };
@@ -104,6 +111,7 @@
 		F89CA6C37580418D94A4BC6C /* Sheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sheets.swift; sourceTree = "<group>"; };
 		E1A9D8B501F44D47AFEE1D3C /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		448E9CDE36874DA6B82674B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+ AABBCCBB2222222222222222 /* OpenUsage-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "OpenUsage-LICENSE.txt"; sourceTree = "<group>"; };
 		06A11255F9B744AC9C6C5D19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		55C680E1FF3F4CC0A2D8C459 /* HarnessManager.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HarnessManager.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -206,6 +214,7 @@
 			isa = PBXGroup;
 			children = (
 				448E9CDE36874DA6B82674B7 /* Assets.xcassets */,
+ AABBCCBB2222222222222222 /* OpenUsage-LICENSE.txt */,
 				55C680E1FF3F4CC0A2D8C459 /* HarnessManager.entitlements */,
 				06A11255F9B744AC9C6C5D19 /* Info.plist */,
 			);
@@ -218,6 +227,8 @@
  CCCCCCCC2222222222222222 /* HarnessNewsService.swift */,
  DDDDDDDD2222222222222222 /* DiscoverCatalogService.swift */,
  EEEEEEEE2222222222222222 /* BenchmarkService.swift */,
+ AABBCCDD2222222222222222 /* UsageService.swift */,
+ AABBCCAA2222222222222222 /* DesktopUsageService.swift */,
 				AF9DB7711D254C85B096A4FB /* CommandRunner.swift */,
 				6E5CB9BAD3F84ED083BCC534 /* DiscoveryCache.swift */,
 				EA1F5783ABBE48E789CD285B /* HarnessDiscoveryService.swift */,
@@ -298,6 +309,7 @@
  BBBBBBBB2222222222222222 /* HarnessLogoView.swift */,
  AAAAAAAA2222222222222222 /* HarnessNewsView.swift */,
  FFFFFFFF2222222222222222 /* BenchmarksView.swift */,
+ AABBCCEE2222222222222222 /* UsageView.swift */,
 				F89CA6C37580418D94A4BC6C /* Sheets.swift */,
 			);
 			path = Shared;
@@ -373,6 +385,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				45923EF0004544E88011F1E3 /* Assets.xcassets in Resources */,
+ AABBCCBB1111111111111111 /* OpenUsage-LICENSE.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -386,6 +399,8 @@
  CCCCCCCC1111111111111111 /* HarnessNewsService.swift in Sources */,
  DDDDDDDD1111111111111111 /* DiscoverCatalogService.swift in Sources */,
  EEEEEEEE1111111111111111 /* BenchmarkService.swift in Sources */,
+ AABBCCDD1111111111111111 /* UsageService.swift in Sources */,
+ AABBCCAA1111111111111111 /* DesktopUsageService.swift in Sources */,
 				ABF5C38B1ADB49E685B1033B /* StoreView.swift in Sources */,
 				1E69E7E3C35444048400788B /* AppState.swift in Sources */,
 				D80BEC8FF80042FFB71D5A2D /* HarnessManagerApp.swift in Sources */,
@@ -427,6 +442,7 @@
  BBBBBBBB1111111111111111 /* HarnessLogoView.swift in Sources */,
  AAAAAAAA1111111111111111 /* HarnessNewsView.swift in Sources */,
  FFFFFFFF1111111111111111 /* BenchmarksView.swift in Sources */,
+ AABBCCEE1111111111111111 /* UsageView.swift in Sources */,
 				B76A8562E0A7412598E99344 /* Sheets.swift in Sources */,
 				F112A828370D4DC1B0AF5382 /* SidebarView.swift in Sources */,
 			);

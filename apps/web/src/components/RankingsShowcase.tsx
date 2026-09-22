@@ -8,7 +8,7 @@ import { screenshots } from "@/lib/screenshots";
 import { rankingGroups } from "@/lib/site";
 
 const examples = [
-  { id: "coding", label: "Coding", icon: CodeIcon, image: "rankings-coding", title: "A better starting point for your next build.", copy: "Compare coding models, then dig into agents, tool calling, full-stack apps, and more. Find a shortlist that fits the work.", alt: "Actual Harness Manager Benchmarks page: Coding rankings with model scores, comparison chart, and collection navigation" },
+  { id: "coding", label: "Coding", icon: CodeIcon, image: "rankings-coding", title: "A better starting point for your next build.", copy: "Compare coding models, then dig into agents, tool calling, full stack apps, and more. Find a shortlist that fits the work.", alt: "Actual Harness Manager Benchmarks page: Coding rankings with model scores, comparison chart, and collection navigation" },
   { id: "design", label: "Design", icon: PaletteIcon, image: "rankings-design", title: "Give your next interface the right model.", copy: "Explore design rankings, with separate collections for UI components, data visualization, SVG, and 3D available in the app.", alt: "Actual Harness Manager Benchmarks page: Design rankings with published scores and model comparison chart" },
   { id: "intelligence", label: "Intelligence", icon: BrainIcon, image: "benchmarks", title: "See how the leading models compare.", copy: "Start with intelligence. Explore reasoning, math, science, and writing when your next task calls for something more specific.", alt: "Actual Harness Manager Benchmarks page: Smartest collection with intelligence scores and ranked models" },
 ];

@@ -99,6 +99,8 @@ struct ContentRouterView: View {
             } else {
                 BenchmarksView()
             }
+        case .usage:
+            UsageView()
         case .providers:
             ProvidersView()
         case .mcpServers:

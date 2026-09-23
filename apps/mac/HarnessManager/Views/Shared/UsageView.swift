@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 struct UsageView: View {
     @State private var store = UsageStore.shared
@@ -8,9 +9,6 @@ struct UsageView: View {
     @State private var showingSettings = false
     @State private var connectionError: String?
     private let accent = Color(red: 0.82, green: 0.34, blue: 0.16)
-    private var dashboardProviders: [UsageProvider] {
-        UsageProvider.allCases.filter { !$0.live && store.preferences.enabled($0) }
-    }
 
     var body: some View {
         ScrollView {
@@ -32,29 +30,15 @@ struct UsageView: View {
                 }
 
                 if !UsageProvider.allCases.contains(where: { $0.live && store.preferences.enabled($0) }) {
-                    ContentUnavailableView("Usage connections are off", systemImage: "slider.horizontal.3", description: Text("Open Customize to turn on the accounts you want to track."))
-                }
-                if !dashboardProviders.isEmpty {
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Console-only provider").font(.system(size: 19, weight: .semibold))
-                    Text("Groq does not publish an account-wide usage endpoint in its public API reference. Its console remains the source for totals and spend limits.")
-                        .font(.system(size: 12)).foregroundStyle(.secondary)
-                    VStack(spacing: 0) {
-                        ForEach(dashboardProviders) { provider in
-                            if let url = Self.dashboardURLs[provider.id] {
-                                if provider != dashboardProviders.first { Divider().padding(.leading, 58) }
-                                dashboardRow(provider.name, detail: "Account usage API unavailable", url: url, logo: provider.logo)
-                            }
-                        }
-                    }.usageSurface()
-                }
+                    ContentUnavailableView(store.preferences.initialized ? "Usage connections are off" : "Detecting your providers…", systemImage: "slider.horizontal.3", description: Text(store.preferences.initialized ? "Open Customize to turn on the accounts you want to track." : "Your first scan will enable the providers found on this Mac."))
                 }
                 Label("Refreshes every 5 minutes while this page is open. Subscription percentages and API dollars stay separate.", systemImage: "info.circle")
                     .font(.caption).foregroundStyle(.secondary)
             }.padding(28).frame(maxWidth: 1100).frame(maxWidth: .infinity)
         }
         .navigationTitle("Usage")
-        .task {
+        .task(id: store.preferences.initialized) {
+            guard store.preferences.initialized else { return }
             await store.refresh()
             while !Task.isCancelled {
                 do { try await Task.sleep(for: .seconds(300)) } catch { return }
@@ -63,7 +47,10 @@ struct UsageView: View {
         }
         .sheet(isPresented: $showingConnection) { RouterUsageConnection(store: store) }
         .sheet(isPresented: $showingBalanceConnection) { RouterUsageConnection(store: store, balanceOnly: true) }
-        .sheet(item: $additionalConnection) { provider in AdditionalUsageConnection(provider: provider, store: store) }
+        .sheet(item: $additionalConnection) { provider in
+            if provider == .groq { GroqUsageConnection(store: store) }
+            else { AdditionalUsageConnection(provider: provider, store: store) }
+        }
         .sheet(isPresented: $showingSettings) { UsageSettingsView(store: store) }
         .alert("Connection unavailable", isPresented: Binding(get: { connectionError != nil }, set: { if !$0 { connectionError = nil } })) {
             Button("OK") { connectionError = nil }
@@ -395,15 +382,15 @@ private struct UsageSettingsView: View {
                 Spacer()
                 Button("Done") { dismiss() }.keyboardShortcut(.defaultAction)
             }
-            Text("Turning a connection off hides its card and stops its usage checks. Saved sign-ins stay connected for when you turn it back on.")
+            Text("Detected providers are enabled on first launch. Your choices are saved across restarts. Turning a connection off hides its card and stops usage checks without deleting its sign-in.")
                 .font(.caption).foregroundStyle(.secondary)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     settingsGroup("LIVE CONNECTIONS", providers: UsageProvider.allCases.filter(\.live))
-                    settingsGroup("DASHBOARD SHORTCUTS", providers: UsageProvider.allCases.filter { !$0.live })
+
                 }
             }
-            Text("Dashboard shortcuts don’t fetch usage. No sample balances or simulated connections are shown.")
+            Text("Each provider reports different metrics. Connection requirements and unavailable totals are shown on its card.")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(26).frame(width: 510, height: 630)
     }
@@ -465,4 +452,45 @@ private struct AdditionalUsageConnection: View {
             }
         }.padding(28).frame(width: 500)
     }
+}
+
+private struct GroqUsageConnection: View {
+    let store: UsageStore
+    @Environment(\.dismiss) private var dismiss
+    @State private var busy = false
+    @State private var error: String?
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Connect Groq Console").font(.title2.weight(.semibold))
+            Text("Sign in below, then click Connect. Your Groq session stays in this app’s separate browser storage. We read organization usage; we never send inference requests.")
+                .font(.callout).foregroundStyle(.secondary)
+            GroqLoginWebView().frame(minHeight: 430).clipShape(RoundedRectangle(cornerRadius: 10))
+            Text("Uses Groq’s undocumented console API. Session renewal is handled by Groq; if it expires, reconnect here. Free-plan costs are projections, not charges.")
+                .font(.caption).foregroundStyle(.secondary)
+            if let error { Text(error).font(.caption).foregroundStyle(.red) }
+            HStack {
+                Button("Close") { dismiss() }.disabled(busy)
+                Button("Sign out & disconnect") {
+                    busy = true
+                    Task { await store.disconnectGroq(); busy = false; dismiss() }
+                }.disabled(busy)
+                Spacer()
+                if busy { ProgressView().controlSize(.small) }
+                Button("Connect") {
+                    busy = true; error = nil
+                    Task {
+                        do { try await store.connectGroq(); dismiss() }
+                        catch { self.error = (error as? UsageFailure)?.errorDescription ?? "Groq could not be connected. Try signing in again." }
+                        busy = false
+                    }
+                }.disabled(busy).keyboardShortcut(.defaultAction)
+            }
+        }.padding(22).frame(width: 780, height: 660)
+        .onAppear { GroqConsoleSession.shared.showLogin() }
+        .onDisappear { GroqConsoleSession.shared.presenting = false }
+    }
+}
+private struct GroqLoginWebView: NSViewRepresentable {
+    func makeNSView(context: Context) -> WKWebView { GroqConsoleSession.shared.webView }
+    func updateNSView(_ nsView: WKWebView, context: Context) {}
 }

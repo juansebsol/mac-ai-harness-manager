@@ -74,7 +74,7 @@ struct MainSplitView: View {
         }
         .onChange(of: appState.selectedSidebar) { _, newValue in
             // Inspector only applies to harness-related screens.
-            if ![.allHarnesses, .running, .problems, .store].contains(newValue) {
+            if ![.allHarnesses, .store].contains(newValue) {
                 appState.closeInspector()
             }
         }
@@ -86,7 +86,7 @@ struct ContentRouterView: View {
 
     var body: some View {
         switch appState.selectedSidebar {
-        case .allHarnesses, .running, .problems:
+        case .allHarnesses:
             HarnessesListView()
         case .store:
             StoreView()

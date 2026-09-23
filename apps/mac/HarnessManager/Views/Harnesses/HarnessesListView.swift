@@ -12,70 +12,148 @@ struct HarnessesListView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 26) {
-                PageHeading(eyebrow: "YOUR WORKSPACE", title: "Ready when you are.", subtitle: "All your coding tools. A little more under control.")
-                HStack(spacing: 12) {
-                    metric("Installed", value: appState.summary.installed, symbol: "square.stack.3d.up", filter: .installed)
-                    metric("Running", value: appState.summary.running, symbol: "play.circle", filter: .running)
-                    metric("Updates", value: appState.summary.updates, symbol: "arrow.down.circle", filter: .updateAvailable)
-                    metric("Needs attention", value: appState.summary.issues, symbol: "exclamationmark.circle", filter: .misconfigured)
-                }
-                HStack {
-                    Text(appState.selectedSidebar == .allHarnesses ? "Your harnesses" : appState.selectedSidebar.title).font(.title3.weight(.semibold))
-                    Spacer()
-                    Button("Discover tools", systemImage: "plus") { appState.selectedSidebar = .store }.buttonStyle(.borderless)
-                }
-                ScrollView(.horizontal, showsIndicators: false) {
+        VStack(spacing: 0) {
+            workspaceHeader
+            Divider()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack {
+                        Text(listTitle).font(.system(size: 14, weight: .semibold))
+                        Text("\(items.count)").font(.system(size: 12, design: .monospaced)).foregroundStyle(.secondary)
+                        Spacer()
+                        if appState.isScanning || appState.isEnriching {
+                            ProgressView().controlSize(.small)
+                            Text(appState.isScanning ? "Scanning your Mac…" : "Updating details…").font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                    if items.isEmpty {
+                        ContentUnavailableView {
+                            Label(emptyTitle, systemImage: emptySymbol)
+                        } description: {
+                            Text(emptyDescription)
+                        } actions: {
+                            if !appState.searchText.isEmpty {
+                                Button("Clear search") { appState.searchText = "" }
+                            } else if appState.harnessFilter != .all {
+                                Button("Show all tools") { appState.harnessFilter = .all }
+                            } else if !appState.isScanning {
+                                Button("Discover tools") { appState.selectedSidebar = .store }
+                            }
+                        }.frame(minHeight: 240)
+                    } else {
+                        LazyVStack(spacing: 0) {
+                            ForEach(items) { item in
+                                workspaceRow(item)
+                                if item.id != items.last?.id { Divider().padding(.leading, 76) }
+                            }
+                        }
+                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
+                        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.primary.opacity(0.07)))
+                    }
                     HStack(spacing: 6) {
-                        ForEach(HarnessFilter.allCases) { filter in
-                            FilterChip(title: filter.title, isSelected: appState.harnessFilter == filter) { appState.harnessFilter = filter }
-                        }
-                    }
-                }
-                if items.isEmpty {
-                    ContentUnavailableView(appState.isScanning ? "Finding your tools…" : "Nothing here yet", systemImage: "square.stack.3d.up", description: Text(appState.isScanning ? appState.scanMessage : "Try another filter, or head to Discover to find your next harness."))
-                        .frame(minHeight: 180)
-                } else {
-                    LazyVStack(spacing: 0) {
-                        ForEach(items) { item in
-                            workspaceRow(item)
-                            if item.id != items.last?.id { Divider().padding(.leading, 76) }
-                        }
-                    }
-                    .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
-                    .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Color.primary.opacity(0.07)))
-                }
-                HStack(spacing: 7) {
-                    Image(systemName: "lock.shield")
-                    Text("Local discovery. You review every install and update.")
-                    Spacer()
-                    if let date = appState.lastRefresh { Text("Scanned \(date.formatted(date: .omitted, time: .shortened))") }
-                }.font(.caption).foregroundStyle(.secondary)
-            }.padding(28)
+                        Image(systemName: "desktopcomputer")
+                        Text("Tools detected on this Mac")
+                        Spacer()
+                        if let date = appState.lastRefresh { Text("Scanned \(date.formatted(date: .omitted, time: .shortened))") }
+                    }.font(.caption).foregroundStyle(.secondary)
+                }.padding(24)
+            }
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .navigationTitle("Workspace")
-        .searchable(text: Bindable(appState).searchText, prompt: "Find a harness")
+        .searchable(text: Bindable(appState).searchText, prompt: "Find a tool")
         .toolbar {
             Button { Task { await appState.fullRefresh(checkUpdates: false) } } label: { Label("Refresh", systemImage: "arrow.clockwise") }.disabled(appState.isScanning)
             Button { Task { await appState.checkForUpdates() } } label: { Label("Check for updates", systemImage: "arrow.triangle.2.circlepath") }.disabled(appState.isCheckingUpdates)
         }
     }
 
-    private func metric(_ title: String, value: Int, symbol: String, filter: HarnessFilter) -> some View {
-        Button { appState.selectedSidebar = .allHarnesses; appState.harnessFilter = filter } label: {
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Image(systemName: symbol).font(.system(size: 17)).foregroundStyle(filter == .updateAvailable && value > 0 ? Color.accentColor : .secondary)
-                    Spacer()
-                    Text("\(value)").font(.system(size: 28, weight: .semibold, design: .rounded).monospacedDigit())
+    private var workspaceHeader: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            HStack(alignment: .center, spacing: 16) {
+                VStack(alignment: .leading, spacing: 7) {
+                    Text("Your workspace").font(.system(size: 28, weight: .bold)).tracking(-0.6)
+                    Text("Launch your tools. Keep everything ready.").font(.system(size: 13)).foregroundStyle(.secondary)
                 }
-                Text(title).font(.callout).foregroundStyle(.secondary)
-            }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
-                .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(appState.harnessFilter == filter ? Color.accentColor.opacity(0.6) : Color.primary.opacity(0.07)))
-        }.buttonStyle(.plain).accessibilityLabel("\(value) \(title). Filter workspace")
+                Spacer(minLength: 0)
+                Button { appState.selectedSidebar = .store } label: {
+                    Label("Add tools", systemImage: "plus")
+                }.buttonStyle(.bordered).controlSize(.large)
+            }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { filterButtons }
+                ScrollView(.horizontal, showsIndicators: false) { HStack(spacing: 6) { filterButtons } }
+            }
+        }.padding(24)
+    }
+
+    private var filterButtons: some View {
+        ForEach(HarnessFilter.allCases) { filter in
+            Button { appState.harnessFilter = filter } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: symbol(filter)).font(.system(size: 12))
+                    Text(filter.title).font(.system(size: 12, weight: .medium))
+                    Text("\(count(filter))")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .padding(.horizontal, 5).padding(.vertical, 2)
+                        .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 4))
+                }
+                .padding(.horizontal, 11).padding(.vertical, 9)
+                .foregroundStyle(appState.harnessFilter == filter ? Color.primary : .secondary)
+                .background(appState.harnessFilter == filter ? Color(nsColor: .controlBackgroundColor) : .clear, in: RoundedRectangle(cornerRadius: 9))
+                .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(appState.harnessFilter == filter ? Color.accentColor.opacity(0.5) : .clear))
+            }.buttonStyle(.plain)
+                .accessibilityLabel("\(filter.title), \(count(filter)) tools")
+                .accessibilityAddTraits(appState.harnessFilter == filter ? .isSelected : [])
+        }
+    }
+
+    private func count(_ filter: HarnessFilter) -> Int {
+        switch filter {
+        case .all: return appState.workspaceHarnesses.count
+        case .running: return appState.summary.running
+        case .updateAvailable: return appState.summary.updates
+        case .misconfigured: return appState.summary.issues
+        }
+    }
+    private func symbol(_ filter: HarnessFilter) -> String {
+        switch filter {
+        case .all: return "square.stack.3d.up"
+        case .running: return "play.circle"
+        case .updateAvailable: return "arrow.down.circle"
+        case .misconfigured: return "exclamationmark.circle"
+        }
+    }
+    private var listTitle: String {
+        switch appState.harnessFilter {
+        case .all: return "On this Mac"
+        case .running: return "Running now"
+        case .updateAvailable: return "Ready to update"
+        case .misconfigured: return "Needs attention"
+        }
+    }
+    private var emptyTitle: String {
+        if appState.isScanning { return "Finding your tools…" }
+        if !appState.searchText.isEmpty { return "No matching tools" }
+        switch appState.harnessFilter {
+        case .all: return "Your workspace starts here"
+        case .running: return "Nothing running right now"
+        case .updateAvailable: return "No updates found"
+        case .misconfigured: return "No issues detected"
+        }
+    }
+    private var emptySymbol: String {
+        appState.harnessFilter == .misconfigured && appState.searchText.isEmpty ? "checkmark.circle" : symbol(appState.harnessFilter)
+    }
+    private var emptyDescription: String {
+        if appState.isScanning { return appState.scanMessage }
+        if !appState.searchText.isEmpty { return "Try a different name or clear your search. Filters also apply to search results." }
+        switch appState.harnessFilter {
+        case .all: return "Add a coding tool from Discover, or refresh to find one you already installed."
+        case .running: return "Open a tool from All tools. Its running status will appear here when detected."
+        case .updateAvailable: return "Use Check for updates in the toolbar to check supported installations."
+        case .misconfigured: return "Your latest scan found no configuration issues. You can run diagnostics from any tool’s menu."
+        }
     }
 
     private func workspaceRow(_ item: HarnessSnapshot) -> some View {
@@ -85,7 +163,11 @@ struct HarnessesListView: View {
                     HarnessLogoView(snapshot: item, size: 40)
                     VStack(alignment: .leading, spacing: 5) {
                         Text(item.name).font(.system(size: 14, weight: .semibold))
-                        Text(item.isInstalled ? item.displayInstallMethod : item.status == .running ? "Running process detected" : "Available in Discover").font(.caption).foregroundStyle(.secondary)
+                        Text(rowDetail(item)).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
+                        if item.needsAttention {
+                            Text(item.definitionIncomplete ? "Setup support is incomplete · review diagnostics" : "Configuration needs attention · review diagnostics")
+                                .font(.caption).foregroundStyle(.orange).lineLimit(2)
+                        }
                     }
                     Spacer(minLength: 10)
                 }.contentShape(Rectangle())
@@ -94,7 +176,9 @@ struct HarnessesListView: View {
                 StatusBadge(status: item.status)
                 if let version = item.installedVersion { Text("v\(version)").font(.system(size: 11, design: .monospaced)).foregroundStyle(.secondary) }
             }
-            if item.updateStatus == .updateAvailable {
+            if item.needsAttention {
+                Button("Diagnose") { appState.runDiagnostics(for: item) }.buttonStyle(.bordered).controlSize(.small).frame(width: 82)
+            } else if item.updateStatus == .updateAvailable {
                 Button("Update…") { Task { await appState.requestUpdate(for: item) } }.buttonStyle(.borderedProminent).controlSize(.small).frame(width: 82)
             } else {
                 Button(item.isInstalled ? "Open" : "Details") {
@@ -103,12 +187,24 @@ struct HarnessesListView: View {
             }
             Menu {
                 Button("Inspect") { appState.openInspector(for: item.id) }
+                if item.isInstalled { Button("Open") { appState.openHarness(item) } }
+                if item.updateStatus == .updateAvailable { Button("Update…") { Task { await appState.requestUpdate(for: item) } } }
                 Button("Run diagnostics") { appState.runDiagnostics(for: item) }
                 if let path = item.binaryPath { Button("Reveal binary") { appState.revealPath(path) }; Button("Copy path") { appState.copyToPasteboard(path) } }
             } label: { Image(systemName: "ellipsis") }.menuStyle(.borderlessButton).fixedSize().frame(width: 16)
         }.padding(18)
             .background(appState.selectedHarnessId == item.id ? Color.accentColor.opacity(0.06) : .clear)
     }
+    private func rowDetail(_ item: HarnessSnapshot) -> String {
+        if item.status == .running {
+            var details = [item.processCount > 0 ? "\(item.processCount) active process\(item.processCount == 1 ? "" : "es")" : "Running process detected"]
+            if let project = item.activeProject { details.append(project) }
+            return details.joined(separator: " · ")
+        }
+        if item.updateStatus == .updateAvailable, let version = item.latestVersion { return "\(item.displayInstallMethod) · Version \(version) available" }
+        return item.displayInstallMethod
+    }
+
 }
 
 struct FilterChip: View {

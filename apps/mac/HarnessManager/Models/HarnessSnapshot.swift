@@ -28,6 +28,8 @@ struct HarnessSnapshot: Identifiable, Codable, Hashable, Sendable {
 
     var id: String { definitionId }
 
+    var needsAttention: Bool { status == .misconfigured || (definitionIncomplete && isInstalled) }
+
     var displayVersion: String {
         installedVersion ?? "—"
     }

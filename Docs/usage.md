@@ -35,9 +35,9 @@ Credits API: https://openrouter.ai/docs/api/api-reference/credits/get-remaining-
 
 The page's **Customize** button opens persistent switches for each live connection and dashboard shortcut. Choices are saved to `usage.disabledProviders` in app preferences. Disabled providers are hidden, their in-flight task is cancelled, and they are excluded from subsequent refreshes. A Codex subprocess already running can finish its bounded read, but its cancelled result is discarded. Re-enabling a live provider requests fresh data. Switching visibility does not erase its credentials.
 
-The settings separate provider integrations from the Groq console shortcut. Mistral currently reports only spending-limit status. Unavailable metrics are never simulated. Google Gemini API uses the bundled Gemini logo in both the page and Customize. Test fixtures exist only in the test target; the Usage page has no mock-data fallback.
+The settings list each provider integration, including Groq. Mistral currently reports only spending-limit status. Unavailable metrics are never simulated. Google Gemini API uses the bundled Gemini logo in both the page and Customize. Test fixtures exist only in the test target; the Usage page has no mock-data fallback.
 
-The Groq shortcut stays visible when enabled. Public Groq docs do not expose an account-wide usage API; the UI says so explicitly.
+Groq connects through an embedded console sign-in using a dedicated persistent WebKit data store. Its console session JWT authenticates the organization activity request; normal inference keys do not. Only the organization ID is saved in preferences. The console SDK renews its own session when possible; expiry requires reconnecting, without opening background login prompts. Disconnect clears this dedicated browser store.
 
 Background Keychain access is silent for both modern and legacy login keychains. Native Security calls are serialized and scoped with `SecKeychainSetUserInteractionAllowed(false)` plus `LAContext.interactionNotAllowed`; the legacy flag is needed because modern query flags alone can still prompt for file-based login keychains. The previous setting is restored after each operation; item access controls are never changed. Reads run off the UI thread with a bounded wait.
 
@@ -80,7 +80,7 @@ Tests in `apps/mac/Tests/UsageTests.swift` cover multi-bucket precedence, legacy
 | Z.ai | Coding Plan quota windows and web-search counts | Coding Plan API key. Same quota endpoint as OpenUsage. |
 | MiniMax | Token Plan current/weekly remaining quota per model | Token Plan key. The remains API's `usage_count` means remaining. No PAYG balance. |
 | Mistral | Organization monthly spending-limit-reached status | Admin key. Detailed billing amounts are **not yet implemented**. |
-| Groq | Console link | No verified public account-wide usage endpoint found; no fake live connection. |
+| Groq | Groq Console session; organization activity endpoint | Current UTC month requests, reported input/output tokens, and costs separated by plan. Free-plan cost is projected, not billed. No balance or remaining quota. Data may lag 15 minutes. |
 
 Added connections validate a live response before saving their credentials in Keychain. HTTP redirects are rejected. No prompts or inference calls are sent. Empty/malformed data never becomes zero; paginated reports fail rather than publish a truncated sum. Provider errors are shown without printing credentials or raw server payloads.
 
@@ -94,3 +94,15 @@ References:
 - https://platform.minimax.io/subscribe/coding-plan
 - https://github.com/steipete/CodexBar/blob/main/Sources/CodexBarCore/Providers/MiniMax/MiniMaxUsageFetcher.swift (response semantics reference; implementation written independently)
 - https://console.groq.com/docs/api-reference
+
+### Groq source and limitations
+
+Verified against the first-party console JavaScript on September 21, 2026: `GET https://api.groq.com/platform/v1/organizations/{id}/activity?start_date={unixSeconds}&end_date={unixSeconds}`, with the console session JWT and `groq-organization` header. This is an undocumented console endpoint and may change. Responses are checked for organization mismatch and explicit pagination; incomplete cost rows suppress cost totals. No signed-in Groq account was available for end-to-end account verification during implementation.
+
+- https://console.groq.com/dashboard/usage
+- https://console.groq.com/_next/static/chunks/9342-52f3918d9f0a3630.js
+- https://console.groq.com/_next/static/chunks/9808-92c5c643fb9e2f98.js
+
+### First-run visibility
+
+On a fresh installation, Usage waits for the completed local discovery scan and enables only detected installed/running tools and configured providers. All other providers start disabled. The initial selection is saved once; later scans and restarts never overwrite it. Explicit toggles made before discovery finishes also win. Existing legacy saved selections migrate unchanged. Detection is presence-only and does not prove that the required usage credential is configured.

@@ -33,13 +33,27 @@ import Security
         let defaults = UserDefaults(suiteName: suite)!
         defer { defaults.removePersistentDomain(forName: suite) }
         let preferences = UsagePreferences(defaults: defaults)
-        precondition(preferences.enabled(.openrouter))
+        precondition(!preferences.enabled(.openrouter) && !preferences.initialized)
+        preferences.set(.groq, enabled: true)
+        preferences.set(.anthropic, enabled: false)
+        preferences.initializeDetected([.cursor, .anthropic, .codex])
+        precondition(preferences.enabled(.cursor) && preferences.enabled(.codex))
+        precondition(preferences.enabled(.groq) && !preferences.enabled(.anthropic))
+        precondition(!preferences.enabled(.openrouter))
         preferences.set(.openrouter, enabled: false)
         preferences.set(.google, enabled: false)
         let reloaded = UsagePreferences(defaults: defaults)
         precondition(!reloaded.enabled(.openrouter) && !reloaded.enabled(.google) && reloaded.enabled(.cursor))
+        reloaded.initializeDetected([.openrouter])
+        precondition(reloaded.enabled(.cursor) && !reloaded.enabled(.openrouter), "Never reset choices on later scans")
         reloaded.set(.openrouter, enabled: true)
         precondition(UsagePreferences(defaults: defaults).enabled(.openrouter))
+        defaults.removeObject(forKey: "usage.providerChoices")
+        defaults.removeObject(forKey: "usage.providerDefaultsInitialized")
+        defaults.set(["google"], forKey: "usage.disabledProviders")
+        let migrated = UsagePreferences(defaults: defaults)
+        migrated.initializeDetected([])
+        precondition(migrated.enabled(.cursor) && !migrated.enabled(.google), "Preserve existing selections on upgrade")
         precondition(UsageProvider.google.logo == "Logo-gemini-cli" && UsageProvider.google.live)
         print("PASS: account credit balance, zero versus unavailable, and persisted provider visibility")
         do { _ = try UsageParser.router(Data(#"{"error":"unauthorized"}"#.utf8)); fatalError("Accepted API error") } catch {}
@@ -80,6 +94,29 @@ import Security
         precondition(servers.count == 1 && servers[0].pid == 123 && servers[0].csrf == "fixture")
         precondition(AntigravityUsageClient.ports("p123\nn127.0.0.1:5555\nn*:5555\nn[::1]:6000\nn*:70000") == [5555, 6000])
         print("PASS: Cursor cents, personal/team scopes, request quotas, Antigravity shared pools, authoritative empty summaries, missing data, process and port filtering")
+        let groqRows: [[String: Any]] = [
+            ["organization_id": "org_test", "num_requests": 3, "plan_id": "free", "cost": 0.25, "n_context_tokens_total": 100],
+            ["organization_id": "org_test", "num_requests": 7, "plan_id": "developer", "cost": 1.5, "n_generated_tokens_total": 50]
+        ]
+        let groq = try AdditionalUsageClient.parseGroq(["object": "list", "data": groqRows], organization: "org_test")
+        precondition(groq.metrics.first?.used == 10)
+        precondition(groq.metrics.first { $0.id == "cost-free" }?.valueLabel == "estimate")
+        precondition(groq.metrics.first { $0.id == "cost-developer" }?.used == 1.5)
+        var incomplete = groqRows; incomplete[0].removeValue(forKey: "cost")
+        let partial = try AdditionalUsageClient.parseGroq(["object": "list", "data": incomplete], organization: "org_test")
+        precondition(!partial.metrics.contains { $0.id.hasPrefix("cost-") })
+        let emptyGroq = try AdditionalUsageClient.parseGroq(["object": "list", "data": []], organization: "org_test")
+        precondition(emptyGroq.metrics.isEmpty)
+        for invalid: [String: Any] in [[:], ["object": "list", "data": groqRows, "has_more": true], ["object": "list", "data": [["organization_id": "org_other", "num_requests": 1, "plan_id": "free"]]]] {
+            do { _ = try AdditionalUsageClient.parseGroq(invalid, organization: "org_test"); fatalError("Invalid Groq activity accepted") } catch {}
+        }
+        let sessionClaims: [String: Any] = ["exp": 2000000000, "https://groq.com/organization": ["id": "org_test"]]
+        let encodedClaims = try JSONSerialization.data(withJSONObject: sessionClaims).base64EncodedString()
+        let groqJWT = "header." + encodedClaims + ".signature"
+        precondition(GroqConsoleSession.parseSession(groqJWT, now: Date(timeIntervalSince1970: 1900000000))?.scope == "org_test")
+        precondition(GroqConsoleSession.parseSession(groqJWT, now: Date(timeIntervalSince1970: 2000000000)) == nil)
+        precondition(GroqConsoleSession.parseSession("invalid") == nil)
+        print("PASS: Groq plan costs, missing costs, organization isolation, pagination rejection, empty activity and session expiry")
         let claude = try AdditionalUsageClient.parseClaude(["five_hour": ["utilization": 25.0], "seven_day": ["utilization": 0.0]])
         precondition(claude.metrics.count == 2 && claude.metrics[0].remaining == 75)
         let zai = try AdditionalUsageClient.parseZAI(["data": ["limits": [["type": "CREDIT_LIMIT", "percentage": 20, "unit": 3, "number": 5], ["type": "TIME_LIMIT", "currentValue": 4, "usage": 100]]]])

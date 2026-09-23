@@ -392,9 +392,10 @@ enum AntigravityUsageClient {
 
 // Live adapters use provider-owned read endpoints only. No inference requests are sent.
 enum AdditionalUsageClient {
-    static let providers: [UsageProvider] = [.anthropic, .google, .openai, .xai, .mistral, .zai, .minimax]
+    static let providers: [UsageProvider] = [.anthropic, .google, .openai, .groq, .xai, .mistral, .zai, .minimax]
     static func requirements(_ provider: UsageProvider) -> String {
         switch provider {
+        case .groq: return "Sign in to Groq Console to read this month’s organization requests, reported tokens, and costs. A standard Groq API key cannot read this data."
         case .anthropic: return "Connect your existing Claude Code sign-in to read session and weekly subscription limits."
         case .openai: return "Requires an OpenAI organization Admin API key. Reports this month’s organization costs; prepaid balance is not exposed by this endpoint."
         case .google: return "Requires a Google Cloud project ID and OAuth access token with Monitoring Viewer access. Reports Gemini output tokens over the last 24 hours; API keys alone cannot read account usage or credits."
@@ -419,6 +420,14 @@ enum AdditionalUsageClient {
     }
     static func fetch(_ provider: UsageProvider, key: String, scope: String = "") async throws -> DesktopUsageSnapshot {
         switch provider {
+        case .groq:
+            guard validScope(scope), scope.hasPrefix("org_") else { throw UsageFailure.unavailable("Reconnect to select your Groq organization.") }
+            var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+            let start = calendar.dateInterval(of: .month, for: Date())!.start
+            var url = URLComponents(string: "https://api.groq.com/platform/v1/organizations/\(scope)/activity")!
+            url.queryItems = [.init(name: "start_date", value: String(Int(start.timeIntervalSince1970))), .init(name: "end_date", value: String(Int(Date().timeIntervalSince1970)))]
+            let root = try await read(url.url!, key: key, headers: ["groq-organization": scope])
+            return try parseGroq(root, organization: scope)
         case .anthropic:
             return try parseClaude(await read(URL(string: "https://api.anthropic.com/api/oauth/usage")!, key: key,
                 headers: ["anthropic-beta": "oauth-2025-04-20", "User-Agent": "claude-code/2.1.69"]))
@@ -473,6 +482,42 @@ enum AdditionalUsageClient {
     }
     static func validScope(_ scope: String) -> Bool { !scope.isEmpty && scope.count < 200 && scope.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || $0 == "-" || $0 == "_") } }
     static func invalid() -> UsageFailure { .unavailable("The provider returned no recognized usage data. Missing values are not treated as zero.") }
+    // Verified against the Groq Console activity schema (2026-09-21). Free-plan costs
+    // are projections, not charges. Missing optional fields are never filled with zero.
+    static func parseGroq(_ root: [String: Any], organization: String) throws -> DesktopUsageSnapshot {
+        guard root["object"] as? String == "list", let rows = root["data"] as? [[String: Any]],
+              root["has_more"] as? Bool != true, root["next_page"] == nil || root["next_page"] is NSNull else { throw invalid() }
+        var requests = 0.0, input = 0.0, output = 0.0, inputRows = 0, outputRows = 0
+        var costs: [String: Double] = [:], missingCosts = false
+        for row in rows {
+            guard row["organization_id"] as? String == organization,
+                  let count = DesktopUsageParser.number(row["num_requests"]),
+                  let plan = row["plan_id"] as? String else { throw invalid() }
+            requests += count
+            if let value = DesktopUsageParser.number(row["n_context_tokens_total"]) { input += value; inputRows += 1 }
+            if let value = DesktopUsageParser.number(row["n_generated_tokens_total"]) { output += value; outputRows += 1 }
+            // Keep every plan separate, including historical plans from a mid-month upgrade.
+            if let cost = DesktopUsageParser.number(row["cost"]) { costs[plan, default: 0] += cost }
+            else { missingCosts = true }
+        }
+        var metrics: [DesktopUsageMetric] = []
+        if !rows.isEmpty {
+            metrics.append(.init(id: "requests", title: "Requests · this month (UTC)", used: requests, limit: nil, unit: .requests))
+            if inputRows > 0 { metrics.append(.init(id: "input", title: "Reported input tokens", used: input, limit: nil, unit: .requests)) }
+            if outputRows > 0 { metrics.append(.init(id: "output", title: "Reported output tokens", used: output, limit: nil, unit: .requests)) }
+            if !missingCosts {
+                for plan in costs.keys.sorted() {
+                    let paid = ["developer", "growth", "enterprise"].contains { plan.hasPrefix($0) }
+                    metrics.append(.init(id: "cost-" + plan, title: paid ? "Reported cost · \(plan)" : "Projected cost · \(plan.isEmpty ? "Free" : plan)", used: costs[plan]!, limit: nil, unit: .dollars, valueLabel: paid ? "reported" : "estimate"))
+                }
+            }
+        }
+        var note = "All projects in organization \(organization), current UTC month. Data can lag by 15 minutes. Free-plan costs are projections, not bills. This endpoint does not report account credits or remaining quota."
+        if rows.isEmpty { note = "Groq reports no activity for this organization this month. " + note }
+        if missingCosts { note += " Cost totals are unavailable because some rows omitted cost." }
+        return .init(metrics: metrics, source: "Groq Console · organization activity", note: note)
+    }
+
     static func parseClaude(_ root: [String: Any]) throws -> DesktopUsageSnapshot {
         var metrics: [DesktopUsageMetric] = []
         for (id, title) in [("five_hour", "Session · 5 hours"), ("seven_day", "Weekly"), ("seven_day_sonnet", "Sonnet · weekly"), ("seven_day_opus", "Opus · weekly")] {

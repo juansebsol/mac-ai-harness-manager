@@ -3,6 +3,7 @@ import Foundation
 import Observation
 import Security
 import LocalAuthentication
+import WebKit
 
 struct UsageWindow: Identifiable, Sendable {
     let id: String
@@ -50,7 +51,7 @@ struct RouterCredits: Decodable, Sendable {
 enum UsageProvider: String, CaseIterable, Identifiable {
     case codex, cursor, antigravity, openrouter, anthropic, google, openai, groq, xai, mistral, zai, minimax
     var id: String { rawValue }
-    var live: Bool { self != .groq }
+    var live: Bool { true }
     var name: String {
         switch self {
         case .codex: "Codex"
@@ -81,15 +82,36 @@ enum UsageProvider: String, CaseIterable, Identifiable {
 
 @Observable @MainActor final class UsagePreferences {
     private let defaults: UserDefaults
-    private(set) var disabled: Set<String>
+    private(set) var choices: [String: Bool]
+    private(set) var initialized: Bool
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        disabled = Set(defaults.stringArray(forKey: "usage.disabledProviders") ?? [])
+        choices = defaults.dictionary(forKey: "usage.providerChoices") as? [String: Bool] ?? [:]
+        initialized = defaults.bool(forKey: "usage.providerDefaultsInitialized")
+        // The old format saved a complete selection once any toggle was changed.
+        // Preserve it on upgrade rather than guessing which enabled accounts were intentional.
+        if !initialized, let disabled = defaults.stringArray(forKey: "usage.disabledProviders") {
+            choices = Dictionary(uniqueKeysWithValues: UsageProvider.allCases.map { ($0.rawValue, !disabled.contains($0.rawValue)) })
+            initialized = true
+            persist()
+        }
     }
-    func enabled(_ provider: UsageProvider) -> Bool { !disabled.contains(provider.rawValue) }
+    func enabled(_ provider: UsageProvider) -> Bool { choices[provider.rawValue] ?? false }
+    func initializeDetected(_ detected: Set<UsageProvider>) {
+        guard !initialized else { return }
+        for provider in UsageProvider.allCases where choices[provider.rawValue] == nil {
+            choices[provider.rawValue] = detected.contains(provider)
+        }
+        initialized = true
+        persist()
+    }
     func set(_ provider: UsageProvider, enabled: Bool) {
-        if enabled { disabled.remove(provider.rawValue) } else { disabled.insert(provider.rawValue) }
-        defaults.set(disabled.sorted(), forKey: "usage.disabledProviders")
+        choices[provider.rawValue] = enabled
+        persist()
+    }
+    private func persist() {
+        defaults.set(choices, forKey: "usage.providerChoices")
+        defaults.set(initialized, forKey: "usage.providerDefaultsInitialized")
     }
 }
 
@@ -576,7 +598,10 @@ extension UsageStore {
         defer { additionalLoading.remove(provider) }
         do {
             let credential: UsageConnectionCredential
-            if provider == .anthropic {
+            if provider == .groq {
+                guard GroqConsoleSession.shared.connected else { additionalErrors[provider] = nil; return }
+                credential = try await GroqConsoleSession.shared.credential()
+            } else if provider == .anthropic {
                 guard let token = try await claudeCredential() else { throw UsageFailure.unavailable("Sign in to Claude Code, then choose Connect Claude Code.") }
                 credential = .init(key: token, scope: "")
             } else {
@@ -632,5 +657,88 @@ extension UsageStore {
     nonisolated static func claudeToken(_ raw: String) -> String? {
         guard let root = try? DesktopUsageParser.object(Data(raw.utf8)), let oauth = root["claudeAiOauth"] as? [String: Any], let token = oauth["accessToken"] as? String, !token.isEmpty else { return nil }
         return token
+    }
+}
+
+/// Groq's console authenticates its platform API with Stytch's session JWT. Keep the
+/// session in a dedicated WebKit store; never read cookies from the user's browser.
+@MainActor final class GroqConsoleSession: NSObject, WKUIDelegate {
+    static let shared = GroqConsoleSession()
+    let webView: WKWebView
+    var presenting = false
+    private let defaults = UserDefaults.standard
+    var connected: Bool { defaults.string(forKey: "usage.groq.organization") != nil }
+    override init() {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = WKWebsiteDataStore(forIdentifier: UUID(uuidString: "1794C455-E998-4CB5-83A6-3C09B941B107")!)
+        webView = WKWebView(frame: .zero, configuration: configuration)
+        super.init()
+        webView.uiDelegate = self
+    }
+    func showLogin() {
+        presenting = true
+        webView.load(URLRequest(url: URL(string: "https://console.groq.com/dashboard/usage")!))
+    }
+    nonisolated static func parseSession(_ jwt: String, now: Date = Date()) -> UsageConnectionCredential? {
+        guard let claims = DesktopUsageParser.jwt(jwt),
+              let expires = DesktopUsageParser.number(claims["exp"]), expires > now.timeIntervalSince1970 + 60 else { return nil }
+        let org = (claims["https://groq.com/organization"] as? [String: Any])?["id"] as? String
+            ?? (claims["https://stytch.com/organization"] as? [String: Any])?["slug"] as? String
+        guard let org, org.hasPrefix("org_"), AdditionalUsageClient.validScope(org) else { return nil }
+        // Parsing is not authentication. The platform usage request verifies the credential.
+        return .init(key: jwt, scope: org)
+    }
+    private func savedSession() async -> UsageConnectionCredential? {
+        let cookies = await webView.configuration.websiteDataStore.httpCookieStore.allCookies()
+        return cookies.filter { $0.name == "stytch_session_jwt" && ["console.groq.com", ".console.groq.com", ".groq.com", "groq.com"].contains($0.domain) }
+            .compactMap { Self.parseSession($0.value) }.first
+    }
+    func credential(connecting: Bool = false) async throws -> UsageConnectionCredential {
+        if presenting && !connecting { throw UsageFailure.unavailable("Finish the Groq connection window, then refresh.") }
+        if let session = await savedSession() { return try checked(session, connecting: connecting) }
+        if !connecting {
+            // Let Groq's own SDK renew its existing session. No sign-in UI opens in the background.
+            webView.load(URLRequest(url: URL(string: "https://console.groq.com/dashboard/usage")!))
+        }
+        for _ in 0..<20 {
+            try Task.checkCancellation()
+            try await Task.sleep(for: .seconds(1))
+            if let session = await savedSession() { return try checked(session, connecting: connecting) }
+        }
+        throw UsageFailure.unavailable("Sign in to Groq Console in the connection window, then click Connect. If the session expired, sign in again; background refresh will not open a login window.")
+    }
+    private func checked(_ session: UsageConnectionCredential, connecting: Bool) throws -> UsageConnectionCredential {
+        if !connecting, defaults.string(forKey: "usage.groq.organization") != session.scope {
+            throw UsageFailure.unavailable("Groq’s signed-in organization changed. Reconnect to confirm the new account.")
+        }
+        return session
+    }
+    func remember(_ scope: String) { defaults.set(scope, forKey: "usage.groq.organization") }
+    func disconnect() async {
+        defaults.removeObject(forKey: "usage.groq.organization")
+        webView.stopLoading()
+        await webView.configuration.websiteDataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), modifiedSince: .distantPast)
+    }
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if presenting, navigationAction.request.url?.scheme == "https" { webView.load(navigationAction.request) }
+        return nil
+    }
+}
+
+extension UsageStore {
+    func connectGroq() async throws {
+        guard !additionalLoading.contains(.groq) else { throw UsageFailure.unavailable("Wait for the current Groq check to finish.") }
+        additionalLoading.insert(.groq)
+        defer { additionalLoading.remove(.groq) }
+        let credential = try await GroqConsoleSession.shared.credential(connecting: true)
+        let snapshot = try await AdditionalUsageClient.fetch(.groq, key: credential.key, scope: credential.scope)
+        GroqConsoleSession.shared.remember(credential.scope)
+        additionalSnapshots[.groq] = snapshot; additionalErrors[.groq] = nil
+    }
+    func disconnectGroq() async {
+        tasks[.groq]?.cancel()
+        await tasks[.groq]?.value
+        await GroqConsoleSession.shared.disconnect()
+        additionalSnapshots[.groq] = nil; additionalErrors[.groq] = nil
     }
 }

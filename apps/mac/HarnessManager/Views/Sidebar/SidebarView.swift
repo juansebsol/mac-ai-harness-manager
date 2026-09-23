@@ -5,7 +5,7 @@ struct SidebarView: View {
 
     var body: some View {
         List(selection: Bindable(appState).selectedSidebar) {
-            Section("Workspace") {
+            Section("Tools") {
                 ForEach(SidebarItem.harnesses) { item in
                     Label(item.title, systemImage: item.systemImage)
                         .tag(item)

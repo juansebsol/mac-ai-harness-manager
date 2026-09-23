@@ -5,7 +5,7 @@ import Observation
 import SwiftUI
 
 enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
-    case allHarnesses, running, problems, store, news, benchmarks
+    case allHarnesses, store, news, benchmarks
     case usage, providers, mcpServers, skills
     case processes
     case settings, about
@@ -15,8 +15,6 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .allHarnesses: return "Workspace"
-        case .running: return "Running"
-        case .problems: return "Problems"
         case .store: return "Discover"
         case .news: return "Harness news"
         case .benchmarks: return "Benchmarks"
@@ -33,8 +31,6 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .allHarnesses: return "square.grid.2x2"
-        case .running: return "play.circle"
-        case .problems: return "exclamationmark.triangle"
         case .store: return "bag"
         case .news: return "newspaper"
         case .benchmarks: return "chart.bar.xaxis"
@@ -48,23 +44,21 @@ enum SidebarItem: String, Hashable, CaseIterable, Identifiable {
         }
     }
 
-    static let harnesses: [SidebarItem] = [.allHarnesses, .running, .problems, .store, .news, .benchmarks]
+    static let harnesses: [SidebarItem] = [.allHarnesses, .store, .news, .benchmarks]
     static let infrastructure: [SidebarItem] = [.usage, .providers, .mcpServers, .skills]
     static let system: [SidebarItem] = [.processes]
     static let bottom: [SidebarItem] = [.settings, .about]
 }
 
 enum HarnessFilter: String, CaseIterable, Identifiable {
-    case all, installed, running, updateAvailable, misconfigured, notInstalled
+    case all, running, updateAvailable, misconfigured
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .all: return "All"
-        case .installed: return "Installed"
+        case .all: return "All tools"
         case .running: return "Running"
-        case .updateAvailable: return "Update Available"
-        case .misconfigured: return "Misconfigured"
-        case .notInstalled: return "Not Installed"
+        case .updateAvailable: return "Updates"
+        case .misconfigured: return "Needs attention"
         }
     }
 }
@@ -169,24 +163,21 @@ final class AppState {
             installed: harnesses.filter(\.isInstalled).count,
             running: harnesses.filter { $0.status == .running }.count,
             updates: harnesses.filter { $0.updateStatus == .updateAvailable }.count,
-            issues: harnesses.filter { $0.status == .misconfigured }.count
+            issues: workspaceHarnesses.filter(\.needsAttention).count
         )
     }
 
+    var workspaceHarnesses: [HarnessSnapshot] {
+        harnesses.filter { $0.isInstalled || $0.status == .running || $0.needsAttention || $0.updateStatus == .updateAvailable }
+    }
+
     var filteredHarnesses: [HarnessSnapshot] {
-        var items = harnesses
-        switch selectedSidebar {
-        case .running: items = items.filter { $0.status == .running }
-        case .problems: items = items.filter { $0.status == .misconfigured || ($0.definitionIncomplete && $0.isInstalled) }
-        default: break
-        }
+        var items = workspaceHarnesses
         switch harnessFilter {
         case .all: break
-        case .installed: items = items.filter(\.isInstalled)
         case .running: items = items.filter { $0.status == .running }
         case .updateAvailable: items = items.filter { $0.updateStatus == .updateAvailable }
-        case .misconfigured: items = items.filter { $0.status == .misconfigured }
-        case .notInstalled: items = items.filter { !$0.isInstalled }
+        case .misconfigured: items = items.filter(\.needsAttention)
         }
         if !searchText.isEmpty {
             let q = searchText.lowercased()
@@ -208,7 +199,7 @@ final class AppState {
     /// Inspector card is open only while a harness is selected.
     var isInspectorPresented: Bool {
         selectedHarnessId != nil
-            && [.allHarnesses, .running, .problems, .store].contains(selectedSidebar)
+            && [.allHarnesses, .store].contains(selectedSidebar)
     }
 
     func openInspector(for harnessId: String) {
@@ -349,6 +340,16 @@ final class AppState {
         self.skills = skills
         self.packageManagers = packageManagers
         self.providers = providers
+        if !isMarketingCapture {
+            var detected = Set(providers.filter(\.isConfigured).compactMap { UsageProvider(rawValue: $0.id) })
+            let installed = Set(harnesses.filter { $0.isInstalled || $0.status == .running }.map(\.definitionId))
+            for (id, provider) in [("codex", UsageProvider.codex), ("cursor", .cursor), ("antigravity", .antigravity), ("antigravity-ide", .antigravity), ("claude-code", .anthropic)] where installed.contains(id) {
+                detected.insert(provider)
+            }
+            // Codex desktop can be installed without its CLI being discoverable.
+            if NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.openai.codex") != nil { detected.insert(.codex) }
+            UsageStore.shared.preferences.initializeDetected(detected)
+        }
     }
 
     func applyHarnessUpdate(_ snapshot: HarnessSnapshot) {

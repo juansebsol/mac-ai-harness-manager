@@ -9,7 +9,7 @@ app = root / 'apps/mac/build/Harness Manager.app/Contents/MacOS/Harness Manager'
 if not app.exists(): raise SystemExit('Build the app first: make build')
 with tempfile.TemporaryDirectory(prefix='harness-native-') as folder:
     subprocess.run([str(app), '--capture-marketing', folder, '-ApplePersistenceIgnoreState', 'YES'], check=True, timeout=150)
-    names = ['workspace', 'discover', 'updates', 'providers', 'processes', 'news', 'benchmarks', 'rankings-coding', 'rankings-design']
+    names = ['workspace', 'discover', 'discover-harnesses-more', 'discover-mcps', 'discover-mcps-more', 'discover-skills', 'discover-skills-more', 'updates', 'providers', 'processes', 'news', 'benchmarks', 'rankings-coding', 'rankings-design']
     for name in names:
         data = (Path(folder) / (name + '.png')).read_bytes()
         if not data.startswith(b'\x89PNG\r\n\x1a\n') or not data.endswith(b'IEND\xaeB`\x82'): raise SystemExit('Invalid capture: ' + name)
@@ -18,5 +18,5 @@ with tempfile.TemporaryDirectory(prefix='harness-native-') as folder:
     dest = root / 'apps/web/public/screenshots'
     dest.mkdir(parents=True, exist_ok=True)
     for name in names: shutil.copyfile(Path(folder) / (name + '.png'), dest / (name + '.png'))
-print('Nine actual native app screenshots exported. Review them before publishing.')
+print('Fourteen actual native app screenshots exported. Review them before publishing.')
 PY

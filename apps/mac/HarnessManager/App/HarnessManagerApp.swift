@@ -6,9 +6,9 @@ struct HarnessManagerApp: App {
     @State private var appState: AppState
 
     init() {
-        let store = SettingsStore(inMemory: MarketingCapture.output != nil)
+        let store = SettingsStore(inMemory: MarketingCapture.isActive)
         let state = AppState(settingsStore: store)
-        if MarketingCapture.output != nil { MarketingCapture.prepare(state) }
+        if MarketingCapture.isActive { MarketingCapture.prepare(state) }
         _settingsStore = State(initialValue: store)
         _appState = State(initialValue: state)
     }
@@ -21,10 +21,11 @@ struct HarnessManagerApp: App {
             RootView()
                 .environment(appState)
                 .environment(settingsStore)
-                .preferredColorScheme(MarketingCapture.output == nil ? nil : .light)
+                .preferredColorScheme(MarketingCapture.isActive ? .light : nil)
                 .frame(minWidth: 980, minHeight: 640)
                 .task {
                     if let path = MarketingCapture.output { await MarketingCapture.export(appState, to: path) }
+                    else if let path = MarketingCapture.recordingOutput { await MarketingCapture.recordDiscover(appState, to: path) }
                     else { appState.start() }
                 }
         }
@@ -100,6 +101,11 @@ enum MarketingCapture {
         guard let i = CommandLine.arguments.firstIndex(of: "--capture-marketing"), CommandLine.arguments.indices.contains(i + 1) else { return nil }
         return CommandLine.arguments[i + 1]
     }
+    static var recordingOutput: String? {
+        guard let i = CommandLine.arguments.firstIndex(of: "--record-discover"), CommandLine.arguments.indices.contains(i + 1) else { return nil }
+        return CommandLine.arguments[i + 1]
+    }
+    static var isActive: Bool { output != nil || recordingOutput != nil }
     static var didExport = false
     static let benchmarks = BenchmarkStore(inMemory: true)
     static let news: [HarnessArticle] = [
@@ -112,7 +118,7 @@ enum MarketingCapture {
         state.isMarketingCapture = true
         state.settingsStore.settings.hasCompletedOnboarding = true
         state.settingsStore.settings.showMenuBarExtra = false
-        state.harnesses = AppState.placeholderHarnesses().filter { ["claude-code", "codex", "gemini-cli", "cursor", "opencode", "warp"].contains($0.id) }
+        state.harnesses = AppState.placeholderHarnesses().filter { ["claude-code", "codex", "gemini-cli", "cursor", "opencode", "warp", "antigravity", "antigravity-ide", "t3-code", "conductor", "superset", "orca", "herdr"].contains($0.id) }
         for i in state.harnesses.indices {
             let id = state.harnesses[i].id
             let installed = ["claude-code", "codex", "cursor", "warp"].contains(id)
@@ -148,10 +154,30 @@ enum MarketingCapture {
             window.setContentSize(NSSize(width: 1200, height: 800))
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
-            for (name, page, filter) in [("workspace", SidebarItem.allHarnesses, HarnessFilter.all), ("discover", .store, .all), ("updates", .allHarnesses, .updateAvailable), ("providers", .providers, .all), ("processes", .processes, .all), ("news", .news, .all), ("benchmarks", .benchmarks, .all), ("rankings-coding", .benchmarks, .all), ("rankings-design", .benchmarks, .all)] {
+            let captures: [(String, SidebarItem, HarnessFilter, DiscoverCategory, String?)] = [
+                ("workspace", .allHarnesses, .all, .harnesses, nil),
+                ("discover", .store, .all, .harnesses, nil),
+                ("discover-harnesses-more", .store, .all, .harnesses, "meta-harnesses"),
+                ("discover-mcps", .store, .all, .mcps, nil),
+                ("discover-mcps-more", .store, .all, .mcps, "microsoft/playwright-mcp"),
+                ("discover-skills", .store, .all, .skills, nil),
+                ("discover-skills-more", .store, .all, .skills, "composiohq/awesome-claude-skills"),
+                ("updates", .allHarnesses, .updateAvailable, .harnesses, nil),
+                ("providers", .providers, .all, .harnesses, nil),
+                ("processes", .processes, .all, .harnesses, nil),
+                ("news", .news, .all, .harnesses, nil),
+                ("benchmarks", .benchmarks, .all, .harnesses, nil),
+                ("rankings-coding", .benchmarks, .all, .harnesses, nil),
+                ("rankings-design", .benchmarks, .all, .harnesses, nil)
+            ]
+            for (name, page, filter, discoverCategory, scrollTarget) in captures {
                 state.marketingRankingID = name == "rankings-coding" ? "coding" : name == "rankings-design" ? "design" : "smartest"
+                state.marketingDiscoverScrollTarget = nil
+                state.marketingDiscoverCategory = discoverCategory
                 state.selectedSidebar = page; state.harnessFilter = filter
-                try await Task.sleep(for: .milliseconds(550))
+                try await Task.sleep(for: .milliseconds(180))
+                state.marketingDiscoverScrollTarget = scrollTarget
+                try await Task.sleep(for: .milliseconds(420))
                 let destination = folder.appendingPathComponent("\(name).png")
                 let capture = Process()
                 capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
@@ -161,8 +187,64 @@ enum MarketingCapture {
                 guard capture.terminationStatus == 0, FileManager.default.fileExists(atPath: destination.path) else { throw CocoaError(.fileWriteUnknown) }
 
             }
-            print("Exported nine native SwiftUI screenshots to \(path)")
+            print("Exported \(captures.count) native SwiftUI screenshots to \(path)")
             NSApp.terminate(nil)
         } catch { fputs("Screenshot export failed: \(error)\n", stderr); exit(1) }
+    }
+
+    static func recordDiscover(_ state: AppState, to path: String) async {
+        guard !didExport else { return }; didExport = true
+        do {
+            let destination = URL(fileURLWithPath: path)
+            try? FileManager.default.removeItem(at: destination)
+            try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try await Task.sleep(for: .milliseconds(700))
+            guard let window = NSApp.windows.first(where: { $0.contentView != nil && $0.isVisible }) else { throw CocoaError(.fileWriteUnknown) }
+            window.appearance = NSAppearance(named: .aqua)
+            window.setContentSize(NSSize(width: 1200, height: 800))
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+
+            state.marketingDiscoverCategory = .harnesses
+            state.marketingDiscoverScrollTarget = nil
+            state.marketingDiscoverScrollDuration = nil
+            state.selectedSidebar = .store
+            try await Task.sleep(for: .milliseconds(700))
+
+            let recording = Process()
+            recording.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            recording.arguments = ["-v", "-x", "-o", "-l", String(window.windowNumber), "-V", "14", destination.path]
+            NSCursor.hide()
+            defer { NSCursor.unhide() }
+            try recording.run()
+
+            // Video capture takes a moment to establish its stream. Keep the
+            // initial harness grid visible before beginning the first scroll.
+            try await Task.sleep(for: .milliseconds(2_200))
+            state.marketingDiscoverScrollDuration = 2.0
+            state.marketingDiscoverScrollTarget = "meta-harnesses"
+            try await Task.sleep(for: .milliseconds(2_400))
+
+            state.marketingDiscoverScrollTarget = nil
+            state.marketingDiscoverScrollDuration = nil
+            state.marketingDiscoverCategory = .mcps
+            try await Task.sleep(for: .milliseconds(850))
+            state.marketingDiscoverScrollDuration = 1.8
+            state.marketingDiscoverScrollTarget = "microsoft/playwright-mcp"
+            try await Task.sleep(for: .milliseconds(2_100))
+
+            state.marketingDiscoverScrollTarget = nil
+            state.marketingDiscoverScrollDuration = nil
+            state.marketingDiscoverCategory = .skills
+            try await Task.sleep(for: .milliseconds(850))
+            state.marketingDiscoverScrollDuration = 1.8
+            state.marketingDiscoverScrollTarget = "composiohq/awesome-claude-skills"
+            try await Task.sleep(for: .milliseconds(2_100))
+
+            while recording.isRunning { try await Task.sleep(for: .milliseconds(200)) }
+            guard recording.terminationStatus == 0, FileManager.default.fileExists(atPath: destination.path) else { throw CocoaError(.fileWriteUnknown) }
+            print("Recorded native Discover walkthrough to \(destination.path)")
+            NSApp.terminate(nil)
+        } catch { fputs("Discover recording failed: \(error)\n", stderr); exit(1) }
     }
 }

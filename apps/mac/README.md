@@ -30,6 +30,25 @@ open "build/Harness Manager.app"
 
 Or open `HarnessManager.xcodeproj` in Xcode and run the **HarnessManager** scheme.
 
+## Downloadable releases
+
+From the repository root, run `make dmg` to rebuild and package a drag-to-Applications installer. Outputs in `apps/mac/dist/`:
+
+- `Harness-Manager-<version>.dmg` — version read from the built app.
+- `Harness-Manager.dmg` — stable filename for GitHub Releases download links.
+- `SHA256SUMS.txt` — SHA-256 checksums for both files.
+
+The stable DMG is also copied to the website's local `/downloads/Harness-Manager.dmg` route. Upload the stable DMG, versioned DMG, and checksums to a GitHub Release. Once published, the permanent latest download URL is `https://github.com/juansebsol/mac-ai-harness-manager/releases/latest/download/Harness-Manager.dmg` (set the website's `NEXT_PUBLIC_DOWNLOAD_URL` to this URL when using release hosting).
+
+By default this produces an ad-hoc signed preview; downloaded copies may be blocked by Gatekeeper. For an Apple-notarized release, configure a Developer ID certificate and a notarytool keychain profile, then run:
+
+```bash
+DEVELOPER_ID="Developer ID Application: Your Name (TEAMID)" \
+NOTARY_PROFILE="your-notary-profile" make dmg
+```
+
+The packager signs the staged app and DMG, submits to Apple, staples and validates the ticket, and generates checksums after notarization. It does not publish automatically.
+
 ## Architecture
 
 | Area | Role |

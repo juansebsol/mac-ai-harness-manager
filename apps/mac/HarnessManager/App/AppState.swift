@@ -83,6 +83,9 @@ final class AppState {
     var lastRefresh: Date?
     var isMarketingCapture = false
     var marketingRankingID = "smartest"
+    var marketingDiscoverCategory: DiscoverCategory = .harnesses
+    var marketingDiscoverScrollTarget: String?
+    var marketingDiscoverScrollDuration: Double?
     var searchText = ""
     var harnessFilter: HarnessFilter = .all
 

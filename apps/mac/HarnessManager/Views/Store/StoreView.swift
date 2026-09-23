@@ -65,15 +65,25 @@ struct StoreView: View {
                     Text(emptyDescription)
                 }
             } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        catalogSection("Coding harnesses", meta: false)
-                        catalogSection("Meta harnesses", meta: true)
-                        if segment == .all {
-                            repositorySection(title: "More harnesses on GitHub", entries: repositories)
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 28) {
+                            catalogSection("Coding harnesses", meta: false)
+                            catalogSection("Meta harnesses", meta: true)
+                            if segment == .all {
+                                repositorySection(title: "More harnesses on GitHub", entries: repositories)
+                            }
+                        }
+                        .padding(28)
+                    }
+                    .onChange(of: appState.marketingDiscoverScrollTarget) { _, target in
+                        guard appState.isMarketingCapture, let target else { return }
+                        if let duration = appState.marketingDiscoverScrollDuration {
+                            withAnimation(.easeInOut(duration: duration)) { proxy.scrollTo(target, anchor: .top) }
+                        } else {
+                            withAnimation(.none) { proxy.scrollTo(target, anchor: .top) }
                         }
                     }
-                    .padding(28)
                 }
             }
         }
@@ -110,6 +120,13 @@ struct StoreView: View {
         .task(id: category) {
             if !appState.isMarketingCapture { await catalog.refresh(category) }
         }
+        .onAppear {
+            if appState.isMarketingCapture { category = appState.marketingDiscoverCategory }
+        }
+        .onChange(of: appState.marketingDiscoverCategory) { _, value in
+            guard appState.isMarketingCapture else { return }
+            category = value
+        }
     }
 
     @ViewBuilder
@@ -127,6 +144,7 @@ struct StoreView: View {
                     ForEach(group) { StoreRow(snapshot: $0) }
                 }
             }
+            .id(meta ? "meta-harnesses" : "coding-harnesses")
         }
     }
 
@@ -169,13 +187,23 @@ struct StoreView: View {
     }
 
     private var repositoryCatalog: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                repositorySection(title: category == .skills ? "Skills for your next project" : "Connections for your agents", entries: repositories)
-                if repositories.isEmpty {
-                    ContentUnavailableView("No matching projects", systemImage: "magnifyingglass", description: Text("Try another search or refresh the catalog."))
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    repositorySection(title: category == .skills ? "Skills for your next project" : "Connections for your agents", entries: repositories)
+                    if repositories.isEmpty {
+                        ContentUnavailableView("No matching projects", systemImage: "magnifyingglass", description: Text("Try another search or refresh the catalog."))
+                    }
+                }.padding(28)
+            }
+            .onChange(of: appState.marketingDiscoverScrollTarget) { _, target in
+                guard appState.isMarketingCapture, let target else { return }
+                if let duration = appState.marketingDiscoverScrollDuration {
+                    withAnimation(.easeInOut(duration: duration)) { proxy.scrollTo(target, anchor: .top) }
+                } else {
+                    withAnimation(.none) { proxy.scrollTo(target, anchor: .top) }
                 }
-            }.padding(28)
+            }
         }
     }
 
@@ -200,7 +228,7 @@ struct StoreView: View {
                     .font(.caption2).foregroundStyle(.secondary)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16)], spacing: 16) {
-                ForEach(entries) { entry in DiscoverRepositoryCard(entry: entry, category: category) }
+                ForEach(entries) { entry in DiscoverRepositoryCard(entry: entry, category: category).id(entry.id) }
             }
         }
     }

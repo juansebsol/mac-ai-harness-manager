@@ -1,32 +1,82 @@
-# Harness Manager
+<p align="center">
+  <img src="apps/mac/HarnessManager/Resources/Assets.xcassets/AppIcon.appiconset/icon_256x256@2x.png" alt="Harness Manager" width="128" height="128">
+</p>
 
-Your AI coding tools, together in one native Mac app. Discover harnesses, review updates, inspect your setup, and follow real harness news. Free and open source under Apache 2.0.
+<h1 align="center">Harness Manager</h1>
 
-## Get the app
+<p align="center">
+  Your AI stack, under control. Discover, install, update, and understand the tools you use to build with AI — in one native Mac app.
+</p>
 
-The website's **Download for Mac** button serves the packaged app. Requires macOS 14+; supports Apple silicon and Intel. The current 0.1.0 preview is ad-hoc signed and not notarized. No public release has been published yet. See [distribution](Docs/DISTRIBUTION.md) for packaging and release requirements.
+<p align="center">
+  <a href="https://github.com/juansebsol/mac-ai-harness-manager/releases/latest/download/Harness-Manager.dmg">Download for Mac</a> ·
+  <a href="https://github.com/juansebsol/mac-ai-harness-manager/releases">Releases</a>
+</p>
 
-## Repository
+---
+
+Harness Manager sits above your AI coding tools and keeps the whole stack easy to see. Find harnesses, MCP servers, and skills; check what is installed; launch the tools you use; and keep up with changes in the ecosystem.
+
+It is free, open source, and built natively for macOS.
+
+- **Discover** — browse coding harnesses, meta-harnesses, MCPs, and skills, ordered by popularity.
+- **Manage** — see what is installed, what needs an update, and what is available for your Mac.
+- **Understand** — inspect providers, package managers, running processes, and local configuration signals.
+- **Stay current** — follow harness news, official releases, and community discoveries in one briefing.
+- **Compare** — explore live model rankings and pricing from Modelgrep.
+
+## Download
+
+Download the latest DMG from [Releases](https://github.com/juansebsol/mac-ai-harness-manager/releases/latest), open it, and drag Harness Manager to Applications.
+
+Requires macOS 14 or later. The release supports both Apple silicon and Intel Macs.
+
+The current preview is ad-hoc signed and not Apple-notarized, so macOS may ask you to approve it in **System Settings → Privacy & Security** on first launch.
+
+## Build from source
+
+You need Xcode 15 or newer to build the Mac app.
+
+```bash
+make run       # build and open the native app
+make build     # compile the Release app
+make test      # run isolated workflow tests
+make dmg       # create the downloadable DMG and checksums
+```
+
+The packaged app is written to `apps/mac/build/Harness Manager.app`. The release files are written to `apps/mac/dist/`.
+
+To work on the website:
+
+```bash
+cd apps/web
+npm ci
+npm run dev
+```
+
+## How it works
+
+Harness Manager discovers tools and configuration locally. It does not upload provider credentials or turn your Mac into a remote control panel. Installation and update commands are shown before they run and require confirmation.
+
+Catalog entries and news link back to their original sources. Model rankings come from Modelgrep and are cached locally for a smoother experience. The app can work with package managers such as npm, pnpm, Bun, and Homebrew when they are available.
+
+## Repository layout
 
 ```text
-apps/mac/   SwiftUI app, Xcode project, scripts, tests
-apps/web/   Next.js product site, native screenshots, press pages
-content/    Native and gallery capture scripts, exported launch media
-Docs/       Design, architecture, distribution, validation
+apps/mac/   Native SwiftUI app and release scripts
+apps/web/   Next.js product site and landing page
+content/    Product Hunt media and capture workflows
+Docs/       Design, architecture, distribution, and validation notes
 ```
 
-## Development
+More detail is available in the [Mac app guide](apps/mac/README.md), [website guide](apps/web/README.md), and [distribution notes](Docs/DISTRIBUTION.md).
 
-Xcode is needed only to develop/build the Mac app, not to use a packaged download.
+## Contributing
 
-```sh
-make run           # Build and open the native app
-make test          # Isolated install/update and news parser tests
-make package       # Universal DMG + SHA-256 for the website
-make native-shots  # Capture six real SwiftUI screens with sample data
-cd apps/web && npm ci
-```
+Harness Manager is early and improving quickly. If a tool is missing, a logo is wrong, or an install flow needs work, open an issue or send a pull request with the details.
 
-From the root: `make web`, `make web-build`, and `make web-lint`. With the site running, `make gallery PORT=3000` produces six 2540 × 1520 press images. All media uses actual native app captures. See [media workflow](content/README.md).
+## License
 
-More: [Mac app](apps/mac/README.md), [website](apps/web/README.md), [design](Docs/DESIGN.md), [structure](Docs/STRUCTURE.md).
+[Apache License 2.0](LICENSE) — free to use, modify, and distribute, including commercially.
+
+Copyright 2026 Juan Sebastian Solano.

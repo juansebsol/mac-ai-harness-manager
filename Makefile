@@ -1,4 +1,4 @@
-.PHONY: build run test web web-build web-lint gallery
+.PHONY: build run test web web-build web-lint gallery package dmg native-shots
 build:
 	./apps/mac/Scripts/build.sh Release
 run: build
@@ -16,5 +16,6 @@ gallery:
 
 package: build
 	./apps/mac/Scripts/package.sh
+dmg: package
 native-shots: build
 	./content/capture-native.sh

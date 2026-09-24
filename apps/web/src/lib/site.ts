@@ -2,6 +2,8 @@ export const site = {
   name: "Harness Manager",
   description: "Manage your AI stack in one native Mac app. Discover tools, MCPs, and skills, review updates, and compare models across 31 ranking collections. Free and open source.",
   repository: "https://github.com/juansebsol/mac-ai-harness-manager",
+  productHuntUrl: "https://www.producthunt.com/products/harness-manager?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-harness-manager",
+  productHuntBadge: "https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1259502&theme=light&t=1790233775318",
   download: process.env.NEXT_PUBLIC_DOWNLOAD_URL?.startsWith("https://") ? process.env.NEXT_PUBLIC_DOWNLOAD_URL : "/downloads/Harness-Manager.dmg",
   version: "0.1.0",
 };
